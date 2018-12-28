@@ -10,6 +10,8 @@ row_length equ 320d
 column_height equ 200d
 
 
+square_side equ 10d
+
 CODESEG
 
 ;This procedure gets the current address (seg:offset) and 
@@ -40,14 +42,14 @@ proc getNextLineAddress
 	
 	noraml:
 		add di, row_length;add 320d to the offset
-		jmp endOfProcaddToAddress
+		jmp endOfProcGetNextAddress
 	special:
 		add di, row_length;add 320d to the offset
 		mov ax, es;increase segment
 		inc ax
 		mov es, ax
 		
-	endOfProcaddToAddress:
+	endOfProcGetNextAddress:
 		pop ax
 		pop bp
 		ret 2
@@ -64,7 +66,7 @@ proc getNextLineAddress
 ;RETURNS:
 ;	es - the I/O memory segment of the pixel
 ;	di - the I/O memory offset of the pixel
-proc find_address
+proc findAddress
 	;initBp
 	push bp
 	mov bp, sp
@@ -102,7 +104,7 @@ proc find_address
 		pop cx
 		pop bp
 		ret 4
-		endp find_address
+		endp findAddress
 
 ; this procedure gets X,Y coordinants, width, height and color
 ; as parameters and draws a rectangle in the correct position
@@ -129,7 +131,7 @@ proc drawRect
 	push cx
 	push bx
 	
-	;check if the input is valid (X+weight<320, Y+height<200)
+	;check if the input is valid (X+width<320, Y+height<200)
 	checkInput:		
 		;check X+W
 		mov ax, param_x
@@ -145,7 +147,7 @@ proc drawRect
 	;get the wanted address and save it in es:di
 	push param_x
 	push param_y
-	call find_address
+	call findAddress
 	
 	mov bx, param_height
 	loopHeight:	
@@ -179,7 +181,280 @@ proc drawRect
 		mov ax, 4c01h
 		int 21h
 	endp drawRect
+
+;this procedure gets X,Y coordinants and color
+;and draws a square in the smallest size in the game
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawBasicSquare
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]	
 	
+	push bp
+	mov bp, sp
+	
+	push param_x;X
+	push param_y;Y
+	push square_side;square side
+	push square_side;square side
+	push param_color;color
+	call drawRect
+	
+	pop bp
+	ret 6
+	endp drawBasicSquare
+	
+
+; this procedure gets X,Y coordinants and color
+; as parameters and draws an L shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawL
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov ax,param_x;save current X in ax 
+	mov bx,param_y;save current Y in bx
+	
+	;first square
+	push ax;X
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	;second square
+	push ax;X
+	add bx, square_side
+	push bx;Y + square_side
+	push param_color
+	call drawBasicSquare
+	
+	;third square
+	push ax;X
+	add bx, square_side;Y+square_side+square_side
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	;fourth square
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	
+	endOfProcDrawL:
+		pop bp
+		pop bx
+		pop ax
+		ret 6
+		endp drawL
+		
+		
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a stair-like shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawStair
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov ax,param_x;save current X in ax 
+	mov bx,param_y;save current Y in bx
+	
+	;first square
+	push ax;X
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	;second square
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y 
+	push param_color
+	call drawBasicSquare
+	
+	;third square
+	push ax;X + square_side
+	add bx, square_side
+	push bx;Y + square_side
+	push param_color
+	call drawBasicSquare
+	
+	;fourth square
+	add ax, square_side
+	push ax;X + square_side + square_side
+	push bx;Y + square_side
+	push param_color
+	call drawBasicSquare
+	
+	
+	endOfProcDrawStair:
+		pop bp
+		pop bx
+		pop ax
+		ret 6
+		endp drawStair
+		
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a pyramid-like shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawPyramid
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov ax,param_x;save current X in ax 
+	mov bx,param_y;save current Y in bx
+	
+	;first square
+	push ax;X
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	;second square
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y 
+	push param_color
+	call drawBasicSquare
+	
+	;third square
+	push ax;X + square_side
+	sub bx, square_side
+	push bx;Y - square_side
+	push param_color
+	call drawBasicSquare
+	
+	;fourth square
+	add ax, square_side
+	push ax;X + square_side + square_side
+	add bx, square_side
+	push bx;Y 
+	push param_color
+	call drawBasicSquare
+	
+	
+	endOfProcDrawPyramid:
+		pop bp
+		pop bx
+		pop ax
+		ret 6
+		endp drawPyramid
+		
+		
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a big square shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawBigSquare
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov al, square_side;save square_side in ax for multipication
+	mov bl, 2
+	mul bl
+	
+	push param_x;X
+	push param_y;Y
+	push ax;width
+	push ax;Side
+	push param_color;color
+	call drawRect
+	
+	endOfProcDrawBigSquare:
+		pop bx
+		pop ax
+		pop bp
+		ret 6
+	endp drawBigSquare
+	
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a big line shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawStraightLine
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+	
+	mov al, square_side;save square_side in ax for multipication
+	mov bl, 2
+	mul bl
+	
+	push param_x;X
+	push param_y;Y
+	push square_side;width
+	push ax;height
+	push param_color;color
+	call drawRect
+	
+	endOfProcDrawStraightLine:
+		pop bx
+		pop ax
+		pop bp
+		ret 6
+	endp drawStraightLine
 
 
 start:
@@ -189,12 +464,30 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 
-	push 0C8h;X = 200d
-	push 96h;Y = 150d
-	push 50d;width = 100d 
-	push 0Ah;height = 50d
-	push 4h;color = 4d
-	call drawRect
+	push 20d;X
+	push 30d;Y
+	push 4d;color
+	call drawBasicSquare
+	
+	push 70d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawL
+	
+	push 100d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawBigSquare
+	
+	push 130d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawStair
+	
+	push 160d;X 
+	push 30d;Y 
+	push 6h;color
+	call drawPyramid
 
 exit:
 	mov ax, 4c00h
