@@ -131,7 +131,7 @@ proc drawRect
 	push cx
 	push bx
 	
-	;check if the input is valid (X+weight<320, Y+height<200)
+	;check if the input is valid (X+width<320, Y+height<200)
 	checkInput:		
 		;check X+W
 		mov ax, param_x
@@ -257,12 +257,204 @@ proc drawL
 	push param_color
 	call drawBasicSquare
 	
+	
 	endOfProcDrawL:
 		pop bp
 		pop bx
 		pop ax
 		ret 6
 		endp drawL
+		
+		
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a stair-like shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawStair
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov ax,param_x;save current X in ax 
+	mov bx,param_y;save current Y in bx
+	
+	;first square
+	push ax;X
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	;second square
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y 
+	push param_color
+	call drawBasicSquare
+	
+	;third square
+	push ax;X + square_side
+	add bx, square_side
+	push bx;Y + square_side
+	push param_color
+	call drawBasicSquare
+	
+	;fourth square
+	add ax, square_side
+	push ax;X + square_side + square_side
+	push bx;Y + square_side
+	push param_color
+	call drawBasicSquare
+	
+	
+	endOfProcDrawStair:
+		pop bp
+		pop bx
+		pop ax
+		ret 6
+		endp drawStair
+		
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a pyramid-like shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawPyramid
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov ax,param_x;save current X in ax 
+	mov bx,param_y;save current Y in bx
+	
+	;first square
+	push ax;X
+	push bx;Y
+	push param_color
+	call drawBasicSquare
+	
+	;second square
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y 
+	push param_color
+	call drawBasicSquare
+	
+	;third square
+	push ax;X + square_side
+	sub bx, square_side
+	push bx;Y - square_side
+	push param_color
+	call drawBasicSquare
+	
+	;fourth square
+	add ax, square_side
+	push ax;X + square_side + square_side
+	add bx, square_side
+	push bx;Y 
+	push param_color
+	call drawBasicSquare
+	
+	
+	endOfProcDrawPyramid:
+		pop bp
+		pop bx
+		pop ax
+		ret 6
+		endp drawPyramid
+		
+		
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a big square shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawBigSquare
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+		
+	mov al, square_side;save square_side in ax for multipication
+	mov bl, 2
+	mul bl
+	
+	push param_x;X
+	push param_y;Y
+	push ax;width
+	push ax;Side
+	push param_color;color
+	call drawRect
+	
+	endOfProcDrawBigSquare:
+		pop bx
+		pop ax
+		pop bp
+		ret 6
+	endp drawBigSquare
+	
+; this procedure gets X,Y coordinants and color
+; as parameters and draws a big line shape in the correct position
+;PARAMS:
+;	X (byValue)
+;	Y (byValue)
+;	color (byValue)
+proc drawStraightLine
+	param_x equ [word ptr bp + 8]
+	param_y equ [word ptr bp + 6]
+	param_color equ [word ptr bp + 4]
+
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+	
+	mov al, square_side;save square_side in ax for multipication
+	mov bl, 2
+	mul bl
+	
+	push param_x;X
+	push param_y;Y
+	push square_side;width
+	push ax;height
+	push param_color;color
+	call drawRect
+	
+	endOfProcDrawStraightLine:
+		pop bx
+		pop ax
+		pop bp
+		ret 6
+	endp drawStraightLine
 
 
 start:
@@ -272,15 +464,30 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 
-	push 0C8h;X = 200d
-	push 96h;Y = 150d
-	push 4h;color = 4d
+	push 20d;X
+	push 30d;Y
+	push 4d;color
 	call drawBasicSquare
 	
-	push 100d;X = 200d
-	push 30d;Y = 150d
-	push 6h;color = 4d
+	push 70d;X 
+	push 30d;Y 
+	push 4h;color
 	call drawL
+	
+	push 100d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawBigSquare
+	
+	push 130d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawStair
+	
+	push 160d;X 
+	push 30d;Y 
+	push 6h;color
+	call drawPyramid
 
 exit:
 	mov ax, 4c00h
