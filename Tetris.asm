@@ -235,7 +235,7 @@ start:
 	push 20d;X
 	push 30d;Y
 	push 4d;color
-	call drawBasicSquare
+	call drawStraightLine
 	
 	push 70d;X 
 	push 30d;Y 
@@ -517,7 +517,7 @@ proc drawStraightLine
 	push bx
 	
 	mov al, square_side;save square_side in ax for multipication
-	mov bl, 2
+	mov bl, 4
 	mul bl
 	
 	push param_x;X
