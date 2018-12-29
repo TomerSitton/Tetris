@@ -8,11 +8,17 @@ initial_vid_memory_seg equ 0A000h
 initial_vid_memory_offset equ 0000h
 row_length equ 320d
 column_height equ 200d
-
-
 square_side equ 10d
 
+
+shapes_buffer db 4 dup(0)
+current_shape_index db 0
+
 CODESEG
+
+proc initShapesBuffer
+	
+
 
 ;This procedure gets the current address (seg:offset) and 
 ;the width of the shape and makes it move to the start of 
@@ -182,7 +188,43 @@ proc drawRect
 		int 21h
 	endp drawRect
 
-;this procedure gets X,Y coordinants and color
+
+start:
+	mov ax, @data
+	mov ds, ax
+	
+	mov ax, 13h;set mode to graphics
+	int 10h
+
+	push 20d;X
+	push 30d;Y
+	push 4d;color
+	call drawBasicSquare
+	
+	push 70d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawL
+	
+	push 100d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawBigSquare
+	
+	push 130d;X 
+	push 30d;Y 
+	push 4h;color
+	call drawStair
+	
+	push 160d;X 
+	push 30d;Y 
+	push 6h;color
+	call drawPyramid
+
+	
+	
+	
+	;this procedure gets X,Y coordinants and color
 ;and draws a square in the smallest size in the game
 ;PARAMS:
 ;	X (byValue)
@@ -455,40 +497,8 @@ proc drawStraightLine
 		pop bp
 		ret 6
 	endp drawStraightLine
-
-
-start:
-	mov ax, @data
-	mov ds, ax
 	
-	mov ax, 13h;set mode to graphics
-	int 10h
-
-	push 20d;X
-	push 30d;Y
-	push 4d;color
-	call drawBasicSquare
 	
-	push 70d;X 
-	push 30d;Y 
-	push 4h;color
-	call drawL
-	
-	push 100d;X 
-	push 30d;Y 
-	push 4h;color
-	call drawBigSquare
-	
-	push 130d;X 
-	push 30d;Y 
-	push 4h;color
-	call drawStair
-	
-	push 160d;X 
-	push 30d;Y 
-	push 6h;color
-	call drawPyramid
-
 exit:
 	mov ax, 4c00h
 	int 21h
