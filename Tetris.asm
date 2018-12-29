@@ -559,16 +559,25 @@ proc drawStraightLine
 ;----------------------------------------------------THE DIFFERENT DRAWINGS OF THE STAIR----------------------------------------------
 ;-------------------------------------------------------------------------------------------------------------------------------------
 
-; this procedure gets X,Y coordinants and color
+; this procedure gets X,Y coordinants, configuration number and color
 ; as parameters and draws a stair-like shape in the correct position
 ;PARAMS:
 ;	X (byValue)
 ;	Y (byValue)
 ;	color (byValue)
+;	config_number (byValue)
+;
+;       1,3					2,4
+;								___
+; 	 ______                 ___|  |
+;   |___   |___            |   ___|
+;	   |______|            |__|     
+;
 proc drawStair
-	param_x equ [word ptr bp + 8]
-	param_y equ [word ptr bp + 6]
-	param_color equ [word ptr bp + 4]
+	param_x equ [word ptr bp + 10]
+	param_y equ [word ptr bp + 8]
+	param_color equ [word ptr bp + 6]
+	param_config_number equ [word ptr bp + 4]
 
 	;init bp
 	push bp
@@ -587,33 +596,65 @@ proc drawStair
 	push param_color
 	call drawBasicSquare
 	
-	;second square
-	add ax, square_side
-	push ax;X + square_side
-	push bx;Y 
-	push param_color
-	call drawBasicSquare
+	cmp param_config_number, 1
+	je stair1
+	cmp param_config_number, 3
+	je stair1
 	
-	;third square
-	push ax;X + square_side
-	add bx, square_side
-	push bx;Y + square_side
-	push param_color
-	call drawBasicSquare
+	jmp stair2
 	
-	;fourth square
-	add ax, square_side
-	push ax;X + square_side + square_side
-	push bx;Y + square_side
-	push param_color
-	call drawBasicSquare
+	stair1:
+		;second square
+		add ax, square_side
+		push ax;X + square_side
+		push bx;Y 
+		push param_color
+		call drawBasicSquare
 	
+		;third square
+		push ax;X + square_side
+		add bx, square_side
+		push bx;Y + square_side
+		push param_color
+		call drawBasicSquare
+	
+		;fourth square
+		add ax, square_side
+		push ax;X + square_side + square_side
+		push bx;Y + square_side
+		push param_color
+		call drawBasicSquare
+		jmp endOfProcDrawStair
+	
+	stair2:
+		;second square
+		push ax;X 
+		sub bx, square_side
+		push bx;Y - square_side
+		push param_color
+		call drawBasicSquare
+	
+		;third square
+		add ax, square_side
+		push ax;X + square_side
+		add bx, square_side
+		push bx;Y
+		push param_color
+		call drawBasicSquare
+	
+		;fourth square
+		push ax;X + square_side
+		add bx, square_side
+		push bx;Y + square_side + square_side
+		push param_color
+		call drawBasicSquare
+		jmp endOfProcDrawStair
 	
 	endOfProcDrawStair:
 		pop bp
 		pop bx
 		pop ax
-		ret 6
+		ret 8
 		endp drawStair
 		
 
