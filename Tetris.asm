@@ -12,7 +12,7 @@ square_side equ 10d
 
 
 shapes_buffer db 4 dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
-current_shape_index db 0;
+
 
 CODESEG
 
@@ -221,19 +221,6 @@ proc drawRect
 		mov ax, 4c01h
 		int 21h
 	endp drawRect
-
-
-start:
-	mov ax, @data
-	mov ds, ax
-	
-	mov ax, 13h;set mode to graphics
-	int 10h
-	
-	mov ax, 10d
-	mov bx, 10d
-	squareLoop:
-		
 	
 ;this procedure gets X,Y coordinants and color
 ;and draws a square in the smallest size in the game
@@ -281,7 +268,7 @@ proc drawBigSquare
 	param_x equ [word ptr bp + 10]
 	param_y equ [word ptr bp + 8]
 	param_color equ [word ptr bp + 6]
-	param config_number equ [word ptr bp + 4]
+	param_config_number equ [word ptr bp + 4]
 	;init bp
 	push bp
 	mov bp, sp
@@ -448,9 +435,9 @@ proc drawL
 		call drawBasicSquare
 	
 	endOfProcDrawL:
-		pop bp
 		pop bx
 		pop ax
+		pop bp
 		ret 8
 		endp drawL
 
@@ -620,9 +607,9 @@ proc drawStair
 		jmp endOfProcDrawStair
 	
 	endOfProcDrawStair:
-		pop bp
 		pop bx
 		pop ax
+		pop bp
 		ret 8
 		endp drawStair
 		
@@ -777,13 +764,106 @@ proc drawPyramid
 	
 	
 	endOfProcDrawPyramid:
-		pop bp
 		pop bx
 		pop ax
+		pop bp
 		ret 8
 		endp drawPyramid
+		
+
+
+
+
+
+
+
+
+
+
+
+		
+start:
+	mov ax, @data
+	mov ds, ax
 	
+	mov ax, 13h;set mode to graphics
+	int 10h
+	
+	mov ax, 10d
+	mov bx, 10d
+	mov cx, 4
+	mov dx, 4d
+	squareLoop:
+		push ax;X
+		push bx;Y
+		push dx;color
+		push cx;config_number
+		call drawBigSquare
+		
+		add ax, 40d
+		loop squareLoop
+	
+	mov ax, 10d
+	add bx, 40d
+	mov cx, 4
+	inc dx
+	LLoop:
+		push ax;X
+		push bx;Y
+		push dx;color
+		push cx;config_number
+		call drawL
+		
+		add ax, 40d
+		loop LLoop
+		
+		
+	mov ax, 10d
+	add bx, 40d
+	mov cx, 4
+	inc dx
+	LineLoop:
+		push ax;X
+		push bx;Y
+		push dx;color
+		push cx;config_number
+		call drawStraightLine
+		
+		add ax, 40d
+		loop LineLoop
+		
+	mov ax, 10d
+	add bx, 40d
+	mov cx, 4
+	inc dx
+	StairLoop:
+		push ax;X
+		push bx;Y
+		push dx;color
+		push cx;config_number
+		call drawStair
+		
+		add ax, 40d
+		loop StairLoop
+		
+	mov ax, 10d
+	add bx, 40d
+	mov cx, 4
+	inc dx
+	PyramidLoop:
+		push ax;X
+		push bx;Y
+		push dx;color
+		push cx;config_number
+		call drawPyramid
+		
+		add ax, 40d
+		loop PyramidLoop
+		
+		
+		
 exit:
 	mov ax, 4c00h
 	int 21h
 END start
+
