@@ -260,7 +260,7 @@ proc drawBasicSquare
 ;	config_number (byValue)
 ;
 ;              1,2,3,4
-;               .____
+;              ._____
 ;	           |    |
 ;		       |____|
 ;
