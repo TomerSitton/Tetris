@@ -309,8 +309,8 @@ proc drawBigSquare
 ;	config_number (byValue)
 ;
 ;  1			2				3				4
-;.__		._______	    .______             __
-;|  |		|	____|	    |__|  |       .____|  |  
+;.__		._______	    .______            .___
+;|  |		|	____|	    |__|  |        ____|  |  
 ;|  |__     |__|               |  |       |_______| 
 ;|____|                        |__|
 proc drawL
@@ -414,23 +414,25 @@ proc drawL
 		jmp endOfProcDrawL
 	L4:
 		;second square
-		add ax, square_side
-		push ax;X + square_side
-		push bx;Y
+		sub ax, square_side
+		sub ax, square_side		
+		push ax;X -square_side - square_side
+		add bx, square_side
+		push bx;Y + square_side
 		push param_color
 		call drawBasicSquare
 	
 		;third square
 		add ax, square_side
-		push ax;X + square_side + square_side
-		push bx;Y
+		push ax;X - square_side
+		push bx;Y + square_side
 		push param_color
 		call drawBasicSquare
 	
 		;fourth square
-		push ax;X + square_side + square_side
-		sub bx, square_side
-		push bx;Y - square_side
+		add ax, square_side
+		push ax;X  
+		push bx;Y + square_side
 		push param_color
 		call drawBasicSquare
 	
@@ -789,7 +791,7 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 	
-	mov ax, 10d
+	mov ax, 30d
 	mov bx, 10d
 	mov cx, 4
 	mov dx, 4d
@@ -803,7 +805,7 @@ start:
 		add ax, 40d
 		loop squareLoop
 	
-	mov ax, 10d
+	mov ax, 30d
 	add bx, 40d
 	mov cx, 4
 	inc dx
@@ -818,7 +820,7 @@ start:
 		loop LLoop
 		
 		
-	mov ax, 10d
+	mov ax, 30d
 	add bx, 40d
 	mov cx, 4
 	inc dx
@@ -832,7 +834,7 @@ start:
 		add ax, 40d
 		loop LineLoop
 		
-	mov ax, 10d
+	mov ax, 30d
 	add bx, 40d
 	mov cx, 4
 	inc dx
@@ -846,7 +848,7 @@ start:
 		add ax, 40d
 		loop StairLoop
 		
-	mov ax, 10d
+	mov ax, 30d
 	add bx, 40d
 	mov cx, 4
 	inc dx
