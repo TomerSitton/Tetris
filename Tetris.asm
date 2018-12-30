@@ -230,32 +230,10 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 	
-	call initShapesBuffer
-
-	push 20d;X
-	push 30d;Y
-	push 4d;color
-	call drawStraightLine
-	
-	push 70d;X 
-	push 30d;Y 
-	push 4h;color
-	call drawL
-	
-	push 100d;X 
-	push 30d;Y 
-	push 4h;color
-	call drawBigSquare0
-	
-	push 130d;X 
-	push 30d;Y 
-	push 4h;color
-	call drawStair
-	
-	push 160d;X 
-	push 30d;Y 
-	push 6h;color
-	call drawPyramid
+	mov ax, 10d
+	mov bx, 10d
+	squareLoop:
+		
 	
 ;this procedure gets X,Y coordinants and color
 ;and draws a square in the smallest size in the game
@@ -286,17 +264,24 @@ proc drawBasicSquare
 ;----------------------------------------------------THE DIFFERENT DRAWINGS OF THE SQUARE---------------------------------------------
 ;-------------------------------------------------------------------------------------------------------------------------------------
 
-; this procedure gets X,Y coordinants and color
+; this procedure gets X,Y coordinants, configuration number and color
 ; as parameters and draws a big square shape in the correct position
 ;PARAMS:
 ;	X (byValue)
 ;	Y (byValue)
 ;	color (byValue)
-proc drawBigSquare0
-	param_x equ [word ptr bp + 8]
-	param_y equ [word ptr bp + 6]
-	param_color equ [word ptr bp + 4]
-
+;	config_number (byValue)
+;
+;              1,2,3,4
+;               .____
+;	           |    |
+;		       |____|
+;
+proc drawBigSquare
+	param_x equ [word ptr bp + 10]
+	param_y equ [word ptr bp + 8]
+	param_color equ [word ptr bp + 6]
+	param config_number equ [word ptr bp + 4]
 	;init bp
 	push bp
 	mov bp, sp
@@ -316,29 +301,13 @@ proc drawBigSquare0
 	push param_color;color
 	call drawRect
 	
-	endOfProcDrawBigSquare0:
+	endOfProcDrawBigSquare:
 		pop bx
 		pop ax
 		pop bp
-		ret 6
-	endp drawBigSquare0
+		ret 8
+	endp drawBigSquare
 
-;the second configuration of the square
-proc drawBigSquare1
-	call drawBigSquare0
-	ret 
-	endp drawBigSquare1
-;the third configuration of the square
-proc drawBigSquare2
-	call drawBigSquare0
-	ret 
-	endp drawBigSquare2
-;the fourth configuration of the square
-proc drawBigSquare3
-	call drawBigSquare0
-	ret 
-	endp drawBigSquare3
-	
 ;-------------------------------------------------------------------------------------------------------------------------------------
 ;----------------------------------------------------THE DIFFERENT DRAWINGS OF THE L--------------------------------------------------
 ;-------------------------------------------------------------------------------------------------------------------------------------
@@ -353,8 +322,8 @@ proc drawBigSquare3
 ;	config_number (byValue)
 ;
 ;  1			2				3				4
-; __		 _______	     ______             __
-;|  |		|	____|	    |__|  |        ____|  |  
+;.__		._______	    .______             __
+;|  |		|	____|	    |__|  |       .____|  |  
 ;|  |__     |__|               |  |       |_______| 
 ;|____|                        |__|
 proc drawL
@@ -500,7 +469,7 @@ proc drawL
 ;	config_number (byValue)
 ;
 ;	 1,3			2,4 
-;     __		  ________
+;    .__		 .________
 ;    |  |		 |________|
 ;    |  |          
 ;    |  |
@@ -569,7 +538,7 @@ proc drawStraightLine
 ;
 ;       1,3					2,4
 ;								___
-; 	 ______                 ___|  |
+; 	.______                .___|  |
 ;   |___   |___            |   ___|
 ;	   |______|            |__|     
 ;
@@ -662,17 +631,26 @@ proc drawStair
 ;----------------------------------------------------THE DIFFERENT DRAWINGS OF THE PYRAMID--------------------------------------------
 ;-------------------------------------------------------------------------------------------------------------------------------------
 
-; this procedure gets X,Y coordinants and color
+; this procedure gets X,Y coordinants, configuration number and color
 ; as parameters and draws a pyramid-like shape in the correct position
 ;PARAMS:
 ;	X (byValue)
 ;	Y (byValue)
 ;	color (byValue)
+;	config_number (byValue)
+;
+;		1		    	2				3				4
+;		___            __        	._________          ___
+;  .___|  |___       .|  |__        |___   ___|     .__|  |
+;  |_________|        |   __|          |__|         |__   |
+;					  |__|	                          |__|
+;
 proc drawPyramid
-	param_x equ [word ptr bp + 8]
-	param_y equ [word ptr bp + 6]
-	param_color equ [word ptr bp + 4]
-
+	param_x equ [word ptr bp + 10]
+	param_y equ [word ptr bp + 8]
+	param_color equ [word ptr bp + 6]
+	param_config_number equ [word ptr bp + 4]
+	
 	;init bp
 	push bp
 	mov bp, sp
@@ -690,34 +668,119 @@ proc drawPyramid
 	push param_color
 	call drawBasicSquare
 	
-	;second square
-	add ax, square_side
-	push ax;X + square_side
-	push bx;Y 
-	push param_color
-	call drawBasicSquare
+	cmp param_config_number, 1
+	je pyramid1
+	cmp param_config_number, 2
+	je pyramid2
+	cmp param_config_number, 3
+	je pyramid3
 	
-	;third square
-	push ax;X + square_side
-	sub bx, square_side
-	push bx;Y - square_side
-	push param_color
-	call drawBasicSquare
+	jmp pyramid4
 	
-	;fourth square
-	add ax, square_side
-	push ax;X + square_side + square_side
-	add bx, square_side
-	push bx;Y 
-	push param_color
-	call drawBasicSquare
+	
+	pyramid1:
+		;second square
+		add ax, square_side
+		push ax;X + square_side
+		push bx;Y 
+		push param_color
+		call drawBasicSquare
+	
+		;third square
+		push ax;X + square_side
+		sub bx, square_side
+		push bx;Y - square_side
+		push param_color
+		call drawBasicSquare
+	
+		;fourth square
+		add ax, square_side
+		push ax;X + square_side + square_side
+		add bx, square_side
+		push bx;Y 
+		push param_color
+		call drawBasicSquare
+		jmp endOfProcDrawPyramid
+	
+	pyramid2:
+		;second square
+		add ax, square_side
+		push ax;X + square_side
+		push bx;Y 
+		push param_color
+		call drawBasicSquare
+	
+		;third square
+		sub ax, square_side
+		push ax;X
+		add bx, square_side
+		push bx;Y + square_side
+		push param_color
+		call drawBasicSquare
+	
+		;fourth square
+		push ax;X
+		sub bx, square_side
+		sub bx, square_side
+		push bx;Y - square_side - square_side
+		push param_color
+		call drawBasicSquare
+		jmp endOfProcDrawPyramid
+	
+	pyramid3:
+		;second square
+		add ax, square_side
+		push ax;X + square_side
+		push bx;Y 
+		push param_color
+		call drawBasicSquare
+	
+		;third square
+		add ax, square_side
+		push ax;X + square_side + square_side
+		push bx;Y
+		push param_color
+		call drawBasicSquare
+	
+		;fourth square
+		sub ax, square_side
+		push ax;X + square_side
+		add bx, square_side
+		push bx;Y + square_side
+		push param_color
+		call drawBasicSquare
+		jmp endOfProcDrawPyramid
+	
+	pyramid4:
+		;second square
+		add ax, square_side
+		push ax;X + square_side
+		push bx;Y 
+		push param_color
+		call drawBasicSquare
+	
+		;third square
+		push ax;X + square_side
+		add bx, square_side
+		push bx;Y + square_side
+		push param_color
+		call drawBasicSquare
+	
+		;fourth square
+		push ax;X + square_side
+		sub bx, square_side
+		sub bx, square_side
+		push bx;Y - square_side
+		push param_color
+		call drawBasicSquare
+		jmp endOfProcDrawPyramid
 	
 	
 	endOfProcDrawPyramid:
 		pop bp
 		pop bx
 		pop ax
-		ret 6
+		ret 8
 		endp drawPyramid
 	
 exit:
