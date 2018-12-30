@@ -14,7 +14,17 @@ square_side equ 10d
 shapes_buffer db 4 dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
 
 
+;current shape data
+current_shape_X db 0
+current_shape_Y db 0
+current_shape_type db 0
+current_shape_config db 0
+
 CODESEG
+
+
+
+
 
 ;this procedure creates 4 random numbers between 0-4
 ;and puts them in the shapes_buffer
