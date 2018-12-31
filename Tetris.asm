@@ -34,16 +34,47 @@ current_shape_Y dw 0
 current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
-;last shape data
-prev_shape_X dw 0
-prev_shape_Y dw 0
-prev_shape_config dw 0
 
 
 CODESEG
 
-;this procedure draws the current shape and delets the 
-;previous one according to the data about them stored in DATASEG
+;this procedure gets dx and dy as parameters 
+;and moves the current shape to the desired location
+;PARAMS:
+;	dx (byValue)
+;	dy (byValue)
+proc move
+	param_dx equ [bp + 6]
+	param_dy equ [bp + 4]
+	
+	;initBp
+	push bp 
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	
+	;delete current shape
+	mov ax, [current_shape_color];save real color
+	mov [current_shape_color], black
+	call drawCurrentShape
+	
+	mov [current_shape_color], ax;recreate the color 
+	
+	;move the shape
+	mov ax, param_dx
+	add [current_shape_X], ax
+	mov ax, param_dy
+	add [current_shape_Y], ax
+	call drawCurrentShape
+	
+	endOfProcMove:
+		pop ax
+		pop bp
+		ret 4
+		endp move
+;this procedure draws the current shape according 
+;to the data about them stored in DATASEG
 ;PARAMS
 ;	NONE
 proc drawCurrentShape
@@ -64,43 +95,17 @@ proc drawCurrentShape
 	
 		square:
 			call drawBigSquare
-			;delete previous
-			push [prev_shape_X];X
-			push [prev_shape_Y];Y
-			push black;color
-			push [prev_shape_config];config
-			call drawBigSquare
 			jmp endOfProcDrawCurrenShape
 		straight:
-			call drawStraightLine
-			push [prev_shape_X];X
-			push [prev_shape_Y];Y
-			push black;color
-			push [prev_shape_config];config
 			call drawStraightLine
 			jmp endOfProcDrawCurrenShape
 		L:
 			call drawL
-			push [prev_shape_X];X
-			push [prev_shape_Y];Y
-			push black;color
-			push [prev_shape_config];config
-			call drawL
 			jmp endOfProcDrawCurrenShape
 		pyramid:
 			call drawPyramid
-			push [prev_shape_X];X
-			push [prev_shape_Y];Y
-			push black;color
-			push [prev_shape_config];config
-			call drawPyramid
 			jmp endOfProcDrawCurrenShape
 		stair:
-			call drawStair
-			push [prev_shape_X];X
-			push [prev_shape_Y];Y
-			push black;color
-			push [prev_shape_config];config
 			call drawStair
 	
 	endOfProcDrawCurrenShape:
@@ -208,15 +213,6 @@ proc getNextShape
 	cmp [next_shape_index], shapes_buffer_size
 	jb endOfProcGetNextShape;check if the index is legal
 	mov [next_shape_index], 0;set index to 0 if bigger then the size of the buffer
-	
-	
-	;init previous shape values
-	mov ax, [current_shape_X]
-	mov [prev_shape_X], ax
-	mov ax, [current_shape_Y]
-	mov [prev_shape_Y], ax
-	mov ax, [current_shape_config]
-	mov [prev_shape_config], ax
 	
 	endOfProcGetNextShape:
 		pop bx
@@ -968,7 +964,9 @@ start:
 		;fall down for 5 sec
 		fallingLoop:
 			call drawCurrentShape
-			add [current_shape_Y], 40d
+			push 0d;dx
+			push 40d;dy
+			call move
 		
 				;wait for first change in counter 
 				initTimer:
