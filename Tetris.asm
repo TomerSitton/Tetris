@@ -14,6 +14,8 @@ initial_vid_memory_seg equ 0A000h
 initial_vid_memory_offset equ 0000h
 ;shapes_buffer constants
 shapes_buffer_size equ 4d
+;color constants
+black equ 0
 
 ;game constants
 square_side equ 10d;small square side size
@@ -32,50 +34,74 @@ current_shape_Y dw 0
 current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
-
+;last shape data
+prev_shape_X dw 0
+prev_shape_Y dw 0
+prev_shape_config dw 0
 
 
 CODESEG
 
-;this procedure draws the current shape according 
-;to the data about it stored in DATASEG
+;this procedure draws the current shape and delets the 
+;previous one according to the data about them stored in DATASEG
 ;PARAMS
 ;	NONE
 proc drawCurrentShape
+		push [current_shape_X]
+		push [current_shape_Y]
+		push [current_shape_color]
+		push [current_shape_config]
+		;check type
+		cmp [current_shape_type], 0;0=square
+		je square
+		cmp [current_shape_type], 1;1=straight line
+		je straight
+		cmp [current_shape_type], 2;2=L
+		je L
+		cmp [current_shape_type], 3;3=pyramid 
+		je pyramid
+		jmp stair;4=stair
 	
-	push [current_shape_X]
-	push [current_shape_Y]
-	push [current_shape_color]
-	push [current_shape_config]
-	;check type
-	cmp [current_shape_type], 0;0=square
-	je square
-	
-	cmp [current_shape_type], 1;1=straight line
-	je straight
-	
-	cmp [current_shape_type], 2;2=L
-	je L
-	
-	cmp [current_shape_type], 3;3=pyramid 
-	je pyramid
-	
-	jmp stair;4=stair
-	
-	square:
-		call drawBigSquare
-		jmp endOfProcDrawCurrenShape
-	straight:
-		call drawStraightLine
-		jmp endOfProcDrawCurrenShape
-	L:
-		call drawL
-		jmp endOfProcDrawCurrenShape
-	pyramid:
-		call drawPyramid
-		jmp endOfProcDrawCurrenShape
-	stair:
-		call drawStair
+		square:
+			call drawBigSquare
+			;delete previous
+			push [prev_shape_X];X
+			push [prev_shape_Y];Y
+			push black;color
+			push [prev_shape_config];config
+			call drawBigSquare
+			jmp endOfProcDrawCurrenShape
+		straight:
+			call drawStraightLine
+			push [prev_shape_X];X
+			push [prev_shape_Y];Y
+			push black;color
+			push [prev_shape_config];config
+			call drawStraightLine
+			jmp endOfProcDrawCurrenShape
+		L:
+			call drawL
+			push [prev_shape_X];X
+			push [prev_shape_Y];Y
+			push black;color
+			push [prev_shape_config];config
+			call drawL
+			jmp endOfProcDrawCurrenShape
+		pyramid:
+			call drawPyramid
+			push [prev_shape_X];X
+			push [prev_shape_Y];Y
+			push black;color
+			push [prev_shape_config];config
+			call drawPyramid
+			jmp endOfProcDrawCurrenShape
+		stair:
+			call drawStair
+			push [prev_shape_X];X
+			push [prev_shape_Y];Y
+			push black;color
+			push [prev_shape_config];config
+			call drawStair
 	
 	endOfProcDrawCurrenShape:
 		ret
