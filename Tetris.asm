@@ -3,18 +3,83 @@ MODEL small
 STACK 100h
 
 DATASEG
-
-initial_vid_memory_seg equ 0A000h
-initial_vid_memory_offset equ 0000h
+;-------------------------------------------
+;-----------------CONSTANTS-----------------
+;-------------------------------------------
+;screen constants
 row_length equ 320d
 column_height equ 200d
-square_side equ 10d
+;video memory constants
+initial_vid_memory_seg equ 0A000h
+initial_vid_memory_offset equ 0000h
+;shapes_buffer constants
+shapes_buffer_size equ 4d
 
+;game constants
+square_side equ 10d;small square side size
+X0 equ 150d;the X in which a new shape should be created
+Y0 equ 20d;the Y in which a new shape should be created
 
-shapes_buffer db 4 dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
+;-------------------------------------------
+;-----------------VARIABLES-----------------
+;-------------------------------------------
+;shapes_buffer data
+shapes_buffer db shapes_buffer_size dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
+next_shape_index db 0;the index of the next shape in the shapes_buffer
+;current shape data
+current_shape_X dw 0
+current_shape_Y dw 0
+current_shape_type dw 0
+current_shape_config dw 0
+current_shape_color dw 0
+
 
 
 CODESEG
+
+;this procedure draws the current shape according 
+;to the data about it stored in DATASEG
+;PARAMS
+;	NONE
+proc drawCurrentShape
+	
+	push [current_shape_X]
+	push [current_shape_Y]
+	push [current_shape_color]
+	push [current_shape_config]
+	;check type
+	cmp [current_shape_type], 0;0=square
+	je square
+	
+	cmp [current_shape_type], 1;1=straight line
+	je straight
+	
+	cmp [current_shape_type], 2;2=L
+	je L
+	
+	cmp [current_shape_type], 3;3=pyramid 
+	je pyramid
+	
+	jmp stair;4=stair
+	
+	square:
+		call drawBigSquare
+		jmp endOfProcDrawCurrenShape
+	straight:
+		call drawStraightLine
+		jmp endOfProcDrawCurrenShape
+	L:
+		call drawL
+		jmp endOfProcDrawCurrenShape
+	pyramid:
+		call drawPyramid
+		jmp endOfProcDrawCurrenShape
+	stair:
+		call drawStair
+	
+	endOfProcDrawCurrenShape:
+		ret
+		endp drawCurrentShape
 
 ;this procedure creates 4 random numbers between 0-4
 ;and puts them in the shapes_buffer
@@ -23,6 +88,8 @@ CODESEG
 ;2 = L
 ;3 = pyramid
 ;4 = stair
+;PARAMS:
+;	NONE
 proc initShapesBuffer
 	;init bp
 	push bp
@@ -35,15 +102,16 @@ proc initShapesBuffer
 	
 	mov bx, 4
 	fillBufferLoop:
-		dec bx
 		;create the random numbers
 		mov ax, 0040h
 		mov es, ax
 		mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+		xor al, [byte cs:2212h+bx]
 		and al, 00000111b;create a random number between 0-7
 		cmp al, 4h
-		ja fillBufferLoop;craete another one if the number too big
-		mov [offset shapes_buffer + bx], al;save the number in the buffer
+		ja fillBufferLoop;create another one if the number too big
+		mov [offset shapes_buffer + bx - 1], al;save the number in the buffer
+		dec bx
 		cmp bx, 0
 		ja fillBufferLoop
 	
@@ -55,7 +123,74 @@ proc initShapesBuffer
 		ret 
 		endp initShapesBuffer
 		
-
+;this procedure updates the current_shape's data according to the item in the shapes_buffer located it the next_shape_index index.
+;it also creates another random number to put in the shapes_buffer, and increases the next_shape_index variable by 1.
+;CURRENT_SHAPE'S DATA:
+;	current_shape_X -> X0
+;	current_shape_Y -> Y0
+;	current_shape_color -> rand(1-8)
+;	current_shape_config -> 0
+;	current_shape_type -> shapes_buffer[next_shape_index]
+;PARAMS:
+;	NONE
+proc getNextShape
+	;save registers state
+	push es
+	push ax
+	push bx
+	
+	;update location
+	mov [current_shape_X], X0
+	mov [current_shape_Y], Y0
+	
+	;create a random color between 1-8
+	mov ax, 0040h
+	mov es, ax
+	mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+	and al, 00000111b;create a random number between 0-7
+	mov ah,0h
+	inc ax;move it from 0-7 to 1-8
+	mov [current_shape_color], ax
+	
+	;initialize the current_shape's configuration
+	mov [current_shape_config], 0
+	
+	;set the shape's type
+	mov bl, [next_shape_index];save the index of the next shape in bl
+	xor bh, bh
+	mov ax, [offset shapes_buffer + bx];save the type of the next shape in ax
+	xor ah, ah
+	mov [current_shape_type],ax;update the current_shape_type variable
+	
+	;create a random number for the next shape
+	createRandomShapeToBuffer:
+		;create the random number
+		mov ax, 0040h
+		mov es, ax
+		mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+		mov bl, [next_shape_index]
+		xor al, [byte offset shapes_buffer + bx]
+		and al, 00000111b;create a random number between 0-7
+		cmp al, 4h
+		ja createRandomShapeToBuffer;create another one if the number too big
+		mov bl, [next_shape_index]
+		mov bh, 0
+		mov [offset shapes_buffer + bx], al;save the number in the buffer
+		
+	;increase next_shape_index
+	inc [next_shape_index]
+	cmp [next_shape_index], shapes_buffer_size
+	jb endOfProcGetNextShape;check if the index is legal
+	mov [next_shape_index], 0;set index to 0 if bigger then the size of the buffer
+	
+	endOfProcGetNextShape:
+		pop bx
+		pop ax
+		pop es
+		ret
+		endp getNextShape
+		
+		
 ;This procedure gets the current address (seg:offset) and 
 ;the width of the shape and makes it move to the start of 
 ;the shape in the next line in a way that will work with 
@@ -791,78 +926,42 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 	
-	mov ax, 30d
-	mov bx, 10d
-	mov cx, 4
-	mov dx, 4d
-	squareLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawBigSquare
+	call initShapesBuffer	
+	gameLoop:
+		mov bx, 3;save the number of fallings in bx
+		call getNextShape
+		;fall down for 5 sec
+		fallingLoop:
+			call drawCurrentShape
+			add [current_shape_Y], 40d
 		
-		add ax, 40d
-		loop squareLoop
-	
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	LLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawL
-		
-		add ax, 40d
-		loop LLoop
-		
-		
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	LineLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawStraightLine
-		
-		add ax, 40d
-		loop LineLoop
-		
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	StairLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawStair
-		
-		add ax, 40d
-		loop StairLoop
-		
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	PyramidLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawPyramid
-		
-		add ax, 40d
-		loop PyramidLoop
-		
-		
+				;wait for first change in counter 
+				initTimer:
+					;wait for first change in timer
+					mov ax, 0040h
+					mov es, ax
+					mov ax, [es:006Ch]
+					;keep looping here until the counter's value has been changed
+					firstTick:
+						cmp ax, [es:006Ch]
+						je FirstTick;same counter value
+				
+				
+				mov cx, 9 ; wait 0.5 seconds: 9 * 0.055 = ~ 0.5sec
+				;sleep for 0.5 sec while listenig to the keyboard interrupts 
+				sleepingLoop:
+					mov ax, [es:006Ch];update ax according to counter
+					sameTickLoop:
+						cmp ax, [es:006Ch]
+						je sameTickLoop;same tick
+					;LISTEN TO KEYBOARD HERE!
+					loop sleepingLoop
+			dec bx
+			cmp bx, 0
+			je gameLoop
+			jne fallingLoop
+				
+				
 		
 exit:
 	mov ax, 4c00h
