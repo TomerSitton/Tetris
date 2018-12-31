@@ -102,15 +102,16 @@ proc initShapesBuffer
 	
 	mov bx, 4
 	fillBufferLoop:
-		dec bx
 		;create the random numbers
 		mov ax, 0040h
 		mov es, ax
 		mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+		xor al, [byte cs:2212h+bx]
 		and al, 00000111b;create a random number between 0-7
 		cmp al, 4h
-		ja fillBufferLoop;craete another one if the number too big
-		mov [offset shapes_buffer + bx], al;save the number in the buffer
+		ja fillBufferLoop;create another one if the number too big
+		mov [offset shapes_buffer + bx - 1], al;save the number in the buffer
+		dec bx
 		cmp bx, 0
 		ja fillBufferLoop
 	
@@ -122,15 +123,14 @@ proc initShapesBuffer
 		ret 
 		endp initShapesBuffer
 		
-				
 ;this procedure updates the current_shape's data according to the item in the shapes_buffer located it the next_shape_index index.
 ;it also creates another random number to put in the shapes_buffer, and increases the next_shape_index variable by 1.
 ;CURRENT_SHAPE'S DATA:
-;	current_shape_X
-;	current_shape_Y
-;	current_shape_color
-;	current_shape_config
-;	current_shape_type
+;	current_shape_X -> X0
+;	current_shape_Y -> Y0
+;	current_shape_color -> rand(1-8)
+;	current_shape_config -> 0
+;	current_shape_type -> shapes_buffer[next_shape_index]
 ;PARAMS:
 ;	NONE
 proc getNextShape
@@ -142,25 +142,45 @@ proc getNextShape
 	;update location
 	mov [current_shape_X], X0
 	mov [current_shape_Y], Y0
-	;create a random color between 0-7
+	
+	;create a random color between 1-8
 	mov ax, 0040h
 	mov es, ax
 	mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
 	and al, 00000111b;create a random number between 0-7
 	mov ah,0h
+	inc ax;move it from 0-7 to 1-8
 	mov [current_shape_color], ax
+	
 	;initialize the current_shape's configuration
 	mov [current_shape_config], 0
+	
 	;set the shape's type
 	mov bl, [next_shape_index];save the index of the next shape in bl
-	mov bh, 0
+	xor bh, bh
 	mov ax, [offset shapes_buffer + bx];save the type of the next shape in ax
+	xor ah, ah
 	mov [current_shape_type],ax;update the current_shape_type variable
+	
+	;create a random number for the next shape
+	createRandomShapeToBuffer:
+		;create the random number
+		mov ax, 0040h
+		mov es, ax
+		mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+		and al, 00000111b;create a random number between 0-7
+		cmp al, 4h
+		ja createRandomShapeToBuffer;create another one if the number too big
+		mov bl, [next_shape_index]
+		mov bh, 0
+		mov [offset shapes_buffer + bx], al;save the number in the buffer
+		
 	;increase next_shape_index
 	inc [next_shape_index]
 	cmp [next_shape_index], shapes_buffer_size
 	jb endOfProcGetNextShape;check if the index is legal
 	mov [next_shape_index], 0;set index to 0 if bigger then the size of the buffer
+	
 	endOfProcGetNextShape:
 		pop bx
 		pop ax
@@ -905,7 +925,41 @@ start:
 	int 10h
 	
 	call initShapesBuffer	
+	gameLoop:
+		mov bx, 3;save the number of fallings in bx
+		call getNextShape
+		;fall down for 5 sec
+		fallingLoop:
+			call drawCurrentShape
+			add [current_shape_Y], 40d
 		
+				;wait for first change in counter 
+				initTimer:
+					;wait for first change in timer
+					mov ax, 0040h
+					mov es, ax
+					mov ax, [es:006Ch]
+					;keep looping here until the counter's value has been changed
+					firstTick:
+						cmp ax, [es:006Ch]
+						je FirstTick;same counter value
+				
+				
+				mov cx, 9 ; wait 0.5 seconds: 9 * 0.055 = ~ 0.5sec
+				;sleep for 0.5 sec while listenig to the keyboard interrupts 
+				sleepingLoop:
+					mov ax, [es:006Ch];update ax according to counter
+					sameTickLoop:
+						cmp ax, [es:006Ch]
+						je sameTickLoop;same tick
+					;LISTEN TO KEYBOARD HERE!
+					loop sleepingLoop
+			dec bx
+			cmp bx, 0
+			je gameLoop
+			jne fallingLoop
+				
+				
 		
 exit:
 	mov ax, 4c00h
