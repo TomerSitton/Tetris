@@ -12,23 +12,28 @@ column_height equ 200d
 ;video memory constants
 initial_vid_memory_seg equ 0A000h
 initial_vid_memory_offset equ 0000h
-
-;small square side size
-square_side equ 10d
-
-;the constant size of the shapes_buffer
+;shapes_buffer constants
 shapes_buffer_size equ 4d
+
+;game constants
+square_side equ 10d;small square side size
+X0 equ 150d;the X in which a new shape should be created
+Y0 equ 20d;the Y in which a new shape should be created
 
 ;-------------------------------------------
 ;-----------------VARIABLES-----------------
 ;-------------------------------------------
+;shapes_buffer data
 shapes_buffer db shapes_buffer_size dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
+next_shape_index db 0;the index of the next shape in the shapes_buffer
 ;current shape data
 current_shape_X dw 0
 current_shape_Y dw 0
 current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
+
+
 
 CODESEG
 
@@ -118,8 +123,8 @@ proc initShapesBuffer
 		endp initShapesBuffer
 		
 				
-;this procedure updates the current_shape's data according to the item in the shapes_buffer located it the next_index index.
-;it also creates another random number to put in the shapes_buffer, and increases the next_index variable by 1.
+;this procedure updates the current_shape's data according to the item in the shapes_buffer located it the next_shape_index index.
+;it also creates another random number to put in the shapes_buffer, and increases the next_shape_index variable by 1.
 ;CURRENT_SHAPE'S DATA:
 ;	current_shape_X
 ;	current_shape_Y
@@ -129,8 +134,41 @@ proc initShapesBuffer
 ;PARAMS:
 ;	NONE
 proc getNextShape
+	;save registers state
+	push es
+	push ax
+	push bx
 	
-
+	;update location
+	mov [current_shape_X], X0
+	mov [current_shape_Y], Y0
+	;create a random color between 0-7
+	mov ax, 0040h
+	mov es, ax
+	mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+	and al, 00000111b;create a random number between 0-7
+	mov ah,0h
+	mov [current_shape_color], ax
+	;initialize the current_shape's configuration
+	mov [current_shape_config], 0
+	;set the shape's type
+	mov bl, [next_shape_index];save the index of the next shape in bl
+	mov bh, 0
+	mov ax, [offset shapes_buffer + bx];save the type of the next shape in ax
+	mov [current_shape_type],ax;update the current_shape_type variable
+	;increase next_shape_index
+	inc [next_shape_index]
+	cmp [next_shape_index], shapes_buffer_size
+	jb endOfProcGetNextShape;check if the index is legal
+	mov [next_shape_index], 0;set index to 0 if bigger then the size of the buffer
+	endOfProcGetNextShape:
+		pop bx
+		pop ax
+		pop es
+		ret
+		endp getNextShape
+		
+		
 ;This procedure gets the current address (seg:offset) and 
 ;the width of the shape and makes it move to the start of 
 ;the shape in the next line in a way that will work with 
