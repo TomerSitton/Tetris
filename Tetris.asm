@@ -10,16 +10,17 @@ row_length equ 320d
 column_height equ 200d
 square_side equ 10d
 
+shapes_buffer_size equ 4d
 
-shapes_buffer db 4 dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
+shapes_buffer db shapes_buffer_size dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
 
 
 ;current shape data
-current_shape_X db 0
-current_shape_Y db 0
-current_shape_type db 0
-current_shape_config db 0
-current_shape_color db 0
+current_shape_X dw 0
+current_shape_Y dw 0
+current_shape_type dw 0
+current_shape_config dw 0
+current_shape_color dw 0
 
 CODESEG
 
@@ -32,7 +33,7 @@ proc drawCurrentShape
 	push [current_shape_X]
 	push [current_shape_Y]
 	push [current_shape_color]
-	push [current_shape_config
+	push [current_shape_config]
 	;check type
 	cmp [current_shape_type], 0;0=square
 	je square
@@ -59,7 +60,7 @@ proc drawCurrentShape
 		jmp endOfProcDrawCurrenShape
 	pyramid:
 		call drawPyramid
-		jmp endOfProcDrawCurrenShapes
+		jmp endOfProcDrawCurrenShape
 	stair:
 		call drawStair
 	
@@ -74,6 +75,8 @@ proc drawCurrentShape
 ;2 = L
 ;3 = pyramid
 ;4 = stair
+;PARAMS:
+;	NONE
 proc initShapesBuffer
 	;init bp
 	push bp
@@ -105,7 +108,6 @@ proc initShapesBuffer
 		pop bp
 		ret 
 		endp initShapesBuffer
-		
 
 ;This procedure gets the current address (seg:offset) and 
 ;the width of the shape and makes it move to the start of 
@@ -842,77 +844,7 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 	
-	mov ax, 30d
-	mov bx, 10d
-	mov cx, 4
-	mov dx, 4d
-	squareLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawBigSquare
-		
-		add ax, 40d
-		loop squareLoop
-	
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	LLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawL
-		
-		add ax, 40d
-		loop LLoop
-		
-		
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	LineLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawStraightLine
-		
-		add ax, 40d
-		loop LineLoop
-		
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	StairLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawStair
-		
-		add ax, 40d
-		loop StairLoop
-		
-	mov ax, 30d
-	add bx, 40d
-	mov cx, 4
-	inc dx
-	PyramidLoop:
-		push ax;X
-		push bx;Y
-		push dx;color
-		push cx;config_number
-		call drawPyramid
-		
-		add ax, 40d
-		loop PyramidLoop
-		
+	call initShapesBuffer	
 		
 		
 exit:
