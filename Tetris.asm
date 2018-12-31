@@ -14,6 +14,8 @@ initial_vid_memory_seg equ 0A000h
 initial_vid_memory_offset equ 0000h
 ;shapes_buffer constants
 shapes_buffer_size equ 4d
+;color constants
+black equ 0
 
 ;game constants
 square_side equ 10d;small square side size
@@ -34,48 +36,77 @@ current_shape_config dw 0
 current_shape_color dw 0
 
 
-
 CODESEG
 
+;this procedure gets dx and dy as parameters 
+;and moves the current shape to the desired location
+;PARAMS:
+;	dx (byValue)
+;	dy (byValue)
+proc move
+	param_dx equ [bp + 6]
+	param_dy equ [bp + 4]
+	
+	;initBp
+	push bp 
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	
+	;delete current shape
+	mov ax, [current_shape_color];save real color
+	mov [current_shape_color], black
+	call drawCurrentShape
+	
+	mov [current_shape_color], ax;recreate the color 
+	
+	;move the shape
+	mov ax, param_dx
+	add [current_shape_X], ax
+	mov ax, param_dy
+	add [current_shape_Y], ax
+	call drawCurrentShape
+	
+	endOfProcMove:
+		pop ax
+		pop bp
+		ret 4
+		endp move
 ;this procedure draws the current shape according 
-;to the data about it stored in DATASEG
+;to the data about them stored in DATASEG
 ;PARAMS
 ;	NONE
 proc drawCurrentShape
+		push [current_shape_X]
+		push [current_shape_Y]
+		push [current_shape_color]
+		push [current_shape_config]
+		;check type
+		cmp [current_shape_type], 0;0=square
+		je square
+		cmp [current_shape_type], 1;1=straight line
+		je straight
+		cmp [current_shape_type], 2;2=L
+		je L
+		cmp [current_shape_type], 3;3=pyramid 
+		je pyramid
+		jmp stair;4=stair
 	
-	push [current_shape_X]
-	push [current_shape_Y]
-	push [current_shape_color]
-	push [current_shape_config]
-	;check type
-	cmp [current_shape_type], 0;0=square
-	je square
-	
-	cmp [current_shape_type], 1;1=straight line
-	je straight
-	
-	cmp [current_shape_type], 2;2=L
-	je L
-	
-	cmp [current_shape_type], 3;3=pyramid 
-	je pyramid
-	
-	jmp stair;4=stair
-	
-	square:
-		call drawBigSquare
-		jmp endOfProcDrawCurrenShape
-	straight:
-		call drawStraightLine
-		jmp endOfProcDrawCurrenShape
-	L:
-		call drawL
-		jmp endOfProcDrawCurrenShape
-	pyramid:
-		call drawPyramid
-		jmp endOfProcDrawCurrenShape
-	stair:
-		call drawStair
+		square:
+			call drawBigSquare
+			jmp endOfProcDrawCurrenShape
+		straight:
+			call drawStraightLine
+			jmp endOfProcDrawCurrenShape
+		L:
+			call drawL
+			jmp endOfProcDrawCurrenShape
+		pyramid:
+			call drawPyramid
+			jmp endOfProcDrawCurrenShape
+		stair:
+			call drawStair
 	
 	endOfProcDrawCurrenShape:
 		ret
@@ -933,7 +964,9 @@ start:
 		;fall down for 5 sec
 		fallingLoop:
 			call drawCurrentShape
-			add [current_shape_Y], 40d
+			push 0d;dx
+			push 40d;dy
+			call move
 		
 				;wait for first change in counter 
 				initTimer:
