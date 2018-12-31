@@ -19,12 +19,53 @@ current_shape_X db 0
 current_shape_Y db 0
 current_shape_type db 0
 current_shape_config db 0
+current_shape_color db 0
 
 CODESEG
 
-
-
-
+;this procedure draws the current shape according 
+;to the data about it stored in DATASEG
+;PARAMS
+;	NONE
+proc drawCurrentShape
+	
+	push [current_shape_X]
+	push [current_shape_Y]
+	push [current_shape_color]
+	push [current_shape_config
+	;check type
+	cmp [current_shape_type], 0;0=square
+	je square
+	
+	cmp [current_shape_type], 1;1=straight line
+	je straight
+	
+	cmp [current_shape_type], 2;2=L
+	je L
+	
+	cmp [current_shape_type], 3;3=pyramid 
+	je pyramid
+	
+	jmp stair;4=stair
+	
+	square:
+		call drawBigSquare
+		jmp endOfProcDrawCurrenShape
+	straight:
+		call drawStraightLine
+		jmp endOfProcDrawCurrenShape
+	L:
+		call drawL
+		jmp endOfProcDrawCurrenShape
+	pyramid:
+		call drawPyramid
+		jmp endOfProcDrawCurrenShapes
+	stair:
+		call drawStair
+	
+	endOfProcDrawCurrenShape:
+		ret
+		endp drawCurrentShape
 
 ;this procedure creates 4 random numbers between 0-4
 ;and puts them in the shapes_buffer
