@@ -168,6 +168,8 @@ proc getNextShape
 		mov ax, 0040h
 		mov es, ax
 		mov ax, [es:006Ch];0040h:006Ch is the address of the clock counter
+		mov bl, [next_shape_index]
+		xor al, [byte offset shapes_buffer + bx]
 		and al, 00000111b;create a random number between 0-7
 		cmp al, 4h
 		ja createRandomShapeToBuffer;create another one if the number too big
