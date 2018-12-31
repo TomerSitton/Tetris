@@ -3,18 +3,26 @@ MODEL small
 STACK 100h
 
 DATASEG
-
-initial_vid_memory_seg equ 0A000h
-initial_vid_memory_offset equ 0000h
+;-------------------------------------------
+;-----------------CONSTANTS-----------------
+;-------------------------------------------
+;screen constants
 row_length equ 320d
 column_height equ 200d
+;video memory constants
+initial_vid_memory_seg equ 0A000h
+initial_vid_memory_offset equ 0000h
+
+;small square side size
 square_side equ 10d
 
+;the constant size of the shapes_buffer
 shapes_buffer_size equ 4d
 
+;-------------------------------------------
+;-----------------VARIABLES-----------------
+;-------------------------------------------
 shapes_buffer db shapes_buffer_size dup(0);this buffer contains the shapes of the game: 0=square, 1=straight line, 2=L, 3=pyramid, 4=stair
-
-
 ;current shape data
 current_shape_X dw 0
 current_shape_Y dw 0
@@ -108,6 +116,20 @@ proc initShapesBuffer
 		pop bp
 		ret 
 		endp initShapesBuffer
+		
+				
+;this procedure updates the current_shape's data according to the item in the shapes_buffer located it the next_index index.
+;it also creates another random number to put in the shapes_buffer, and increases the next_index variable by 1.
+;CURRENT_SHAPE'S DATA:
+;	current_shape_X
+;	current_shape_Y
+;	current_shape_color
+;	current_shape_config
+;	current_shape_type
+;PARAMS:
+;	NONE
+proc getNextShape
+	
 
 ;This procedure gets the current address (seg:offset) and 
 ;the width of the shape and makes it move to the start of 
