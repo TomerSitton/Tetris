@@ -209,6 +209,15 @@ proc getNextShape
 	jb endOfProcGetNextShape;check if the index is legal
 	mov [next_shape_index], 0;set index to 0 if bigger then the size of the buffer
 	
+	
+	;init previous shape values
+	mov ax, [current_shape_X]
+	mov [prev_shape_X], ax
+	mov ax, [current_shape_Y]
+	mov [prev_shape_Y], ax
+	mov ax, [current_shape_config]
+	mov [prev_shape_config], ax
+	
 	endOfProcGetNextShape:
 		pop bx
 		pop ax
