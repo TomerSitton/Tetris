@@ -21,7 +21,8 @@ black equ 0
 square_side equ 10d;small square side size
 X0 equ 150d;the X in which a new shape should be created
 Y0 equ 20d;the Y in which a new shape should be created
-
+delta_x equ 20d;the distance to move when movement on X axis is required
+delta_y equ 20d;the distance to move when movement on Y axis is required
 ;-------------------------------------------
 ;-----------------VARIABLES-----------------
 ;-------------------------------------------
@@ -41,8 +42,8 @@ CODESEG
 ;this procedure gets dx and dy as parameters 
 ;and moves the current shape to the desired location
 ;PARAMS:
-;	dx (byValue)
-;	dy (byValue)
+;	dx (byValue) - signed
+;	dy (byValue) - signed
 proc move
 	param_dx equ [bp + 6]
 	param_dy equ [bp + 4]
@@ -53,26 +54,101 @@ proc move
 	
 	;save registers state
 	push ax
-	
+	push cx
+	push dx
 	;delete current shape
 	mov ax, [current_shape_color];save real color
 	mov [current_shape_color], black
 	call drawCurrentShape
-	
 	mov [current_shape_color], ax;recreate the color 
 	
-	;move the shape
+	;check if dX movment is negetive or positive
 	mov ax, param_dx
-	add [current_shape_X], ax
-	mov ax, param_dy
-	add [current_shape_Y], ax
-	call drawCurrentShape
+	shl ax, 1
+	jnc positive
+	
+	negative:
+		mov ax, param_dx
+		;shift 0s with 1s and 1s with 0s
+		mov cl, 1
+		mov dx, 0h;dx will hold the positive number created
+		changeBitsLoop:
+			shl ax, cl
+			jc shift;the bit in location cx bit in ax is 1 (need to be set to 0)
+			changeTo1:
+				add dx, 1b
+			shift:
+				shl dx, 1
+			inc cl
+			cmp cl, 16
+			jne changeBitsLoop
+			
+		;move the shape
+		sub [current_shape_X],dx
+		mov ax, param_dy
+		add[current_shape_Y], ax
+		call drawCurrentShape
+		jmp endOfProcMove
+		
+	positive:
+		;move the shape
+		mov ax, param_dx
+		add [current_shape_X], ax
+		mov ax, param_dy
+		add [current_shape_Y], ax
+		call drawCurrentShape
 	
 	endOfProcMove:
+		pop dx
+		pop cx
 		pop ax
 		pop bp
 		ret 4
 		endp move
+		
+;this procedure rotates the shape to the right
+;which means increases its configuration by 1
+;PARAMS:
+;	NONE
+proc rotateCurrentShapeRight
+	;delete current shape
+	push [current_shape_color]
+	mov [current_shape_color], black
+	call drawCurrentShape
+	;draw the shpae with new configuration
+	pop [current_shape_color]
+	inc [current_shape_config]
+	cmp [current_shape_config], 4
+	jbe endOfProcRotateRight
+	mov [current_shape_config], 0 
+	
+	endOfProcRotateRight:
+		call drawCurrentShape
+		ret	
+		endp rotateCurrentShapeRight
+	
+;this procedure rotates the shape to the left
+;which means decreases its configuration by 1
+;PARAMS:
+;	NONE
+proc rotateCurrentShapeLeft
+	;delete current shape
+	push [current_shape_color]
+	mov [current_shape_color], black
+	call drawCurrentShape
+	;draw the shpae with new configuration
+	pop [current_shape_color]
+	dec [current_shape_config]
+	cmp [current_shape_config], 1
+	jae endOfProcRotateRight
+	mov [current_shape_config], 4
+
+	endOfProcRotateLeft:
+		call drawCurrentShape
+		ret	
+		endp rotateCurrentShapeLeft
+	
+	
 ;this procedure draws the current shape according 
 ;to the data about them stored in DATASEG
 ;PARAMS
@@ -939,17 +1015,59 @@ proc drawPyramid
 		endp drawPyramid
 		
 
-
-
-
-
-
-
-
-
-
-
 		
+		
+		
+;this procedure checks the keyboard port for data, and
+;chenges the game's state accordingly
+proc listenToKeyboard
+	;save registers state
+	push ax
+	;check for data
+	in al, 64h
+	cmp al, 10b;check if data
+	je endOfProcListenToKeyboard
+		
+	in al, 60h;read the data
+	;up
+	cmp al, 48h
+	je up
+	;down
+	cmp al, 50h
+	je down
+	;left
+	cmp al, 4Bh
+	je left
+	;right
+	cmp al, 4Dh
+	je right
+		
+	jmp endOfProcListenToKeyboard
+		
+	up:
+		call rotateCurrentShapeRight
+		jmp endOfProcListenToKeyboard
+	down:
+		call rotateCurrentShapeLeft
+		jmp endOfProcListenToKeyboard
+	left:
+		xor ax, ax
+		sub ax, delta_x
+		push ax;dX = -delta_x
+		push 0;dY = 0
+		call move
+		jmp endOfProcListenToKeyboard
+	right:
+		push delta_x;dX=delta_x
+		push 0;dY=0
+		call move
+		
+	endOfProcListenToKeyboard:
+		pop ax
+		ret
+		endp listenToKeyboard
+		
+
 start:
 	mov ax, @data
 	mov ds, ax
@@ -980,15 +1098,16 @@ start:
 						je FirstTick;same counter value
 				
 				
-				mov cx, 9 ; wait 0.5 seconds: 9 * 0.055 = ~ 0.5sec
-				;sleep for 0.5 sec while listenig to the keyboard interrupts 
-				sleepingLoop:
+				mov cx, 36 ; wait 1 second: 36 * 0.055 = ~ 2sec
+				;hover for 1 sec while listenig to the keyboard interrupts 
+				hoveringLoop:
 					mov ax, [es:006Ch];update ax according to counter
 					sameTickLoop:
+						call listenToKeyboard
 						cmp ax, [es:006Ch]
 						je sameTickLoop;same tick
-					;LISTEN TO KEYBOARD HERE!
-					loop sleepingLoop
+					
+					loop hoveringLoop
 			dec bx
 			cmp bx, 0
 			je gameLoop
