@@ -1024,22 +1024,24 @@ proc listenToKeyboard
 	;save registers state
 	push ax
 	;check for data
-	in al, 64h
-	cmp al, 10b;check if data
-	je endOfProcListenToKeyboard
-		
-	in al, 60h;read the data
+	mov ah,1h
+	int 16h
+	jz endOfProcListenToKeyboard;no data
+	
+	;read the data: al=ASCII, ah=SCAN CODE
+	mov ah, 0h
+	int 16h
 	;up
-	cmp al, 48h
+	cmp ah, 48h
 	je up
 	;down
-	cmp al, 50h
+	cmp ah, 50h
 	je down
 	;left
-	cmp al, 4Bh
+	cmp ah, 4bh
 	je left
 	;right
-	cmp al, 4Dh
+	cmp ah, 4dh
 	je right
 		
 	jmp endOfProcListenToKeyboard
@@ -1098,15 +1100,15 @@ start:
 						je FirstTick;same counter value
 				
 				
-				mov cx, 36 ; wait 1 second: 36 * 0.055 = ~ 2sec
-				;hover for 1 sec while listenig to the keyboard interrupts 
+				mov cx, 27 ; wait 1 second:  27 * 0.055 = ~ 1.5sec
+				;hover for 1.5 sec while listenig to the keyboard interrupts 
 				hoveringLoop:
 					mov ax, [es:006Ch];update ax according to counter
 					sameTickLoop:
-						call listenToKeyboard
 						cmp ax, [es:006Ch]
 						je sameTickLoop;same tick
 					
+					call listenToKeyboard
 					loop hoveringLoop
 			dec bx
 			cmp bx, 0
