@@ -36,6 +36,7 @@ current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
 
+oldSecs db ?
 
 CODESEG
 
@@ -1022,6 +1023,7 @@ proc drawPyramid
 ;chenges the game's state accordingly
 proc listenToKeyboard
 	;save registers state
+	push dx
 	push ax
 	;check for data
 	mov ah,1h
@@ -1065,6 +1067,11 @@ proc listenToKeyboard
 		call move
 		
 	endOfProcListenToKeyboard:
+		;print test
+		;mov dl, 'X'
+		;mov ah, 2
+		;int 21h
+		pop dx
 		pop ax
 		ret
 		endp listenToKeyboard
@@ -1100,23 +1107,37 @@ start:
 						je FirstTick;same counter value
 				
 				
-				mov cx, 27 ; wait 1 second:  27 * 0.055 = ~ 1.5sec
-				;hover for 1.5 sec while listenig to the keyboard interrupts 
+				mov ah, 2ch
+				int 21h ;ch- hour, cl- minutes, dh- seconds, dl- hundreths secs
+				mov [oldSecs], dh 
+				;hover for 2 sec while listenig to the keyboard interrupts 
 				hoveringLoop:
-					mov ax, [es:006Ch];update ax according to counter
-					sameTickLoop:
-						cmp ax, [es:006Ch]
-						je sameTickLoop;same tick
-					
 					call listenToKeyboard
-					loop hoveringLoop
-			dec bx
-			cmp bx, 0
-			je gameLoop
-			jne fallingLoop
-				
-				
+					mov ah, 2ch
+					int 21h;ch- hour, cl- minutes, dh- seconds, dl- hundreths secs
+					cmp [oldSecs], dh
+					ja differentMinute;oldSecs > newSecs
+					
+					;newSecs - oldSecs < 2
+					sub dh, [oldSecs]
+					cmp dh, 2d
+					jb hoveringLoop
+					jmp stopHovering
 		
+					;60 - oldSecs + newSecs < 2
+					differentMinute:
+					mov al, 60d
+					sub al, [oldSecs]
+					add al, dh
+					cmp al, 2d
+					jb hoveringLoop
+					
+				stopHovering:
+					dec bx			
+					cmp bx, 0
+					je gameLoop
+					jne fallingLoop
+
 exit:
 	mov ax, 4c00h
 	int 21h
