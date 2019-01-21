@@ -1067,10 +1067,6 @@ proc listenToKeyboard
 		call move
 		
 	endOfProcListenToKeyboard:
-		;print test
-		;mov dl, 'X'
-		;mov ah, 2
-		;int 21h
 		pop dx
 		pop ax
 		ret
