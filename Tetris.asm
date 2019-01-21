@@ -23,6 +23,7 @@ X0 equ 150d;the X in which a new shape should be created
 Y0 equ 20d;the Y in which a new shape should be created
 delta_x equ 20d;the distance to move when movement on X axis is required
 delta_y equ 20d;the distance to move when movement on Y axis is required
+hovering_time equ 2d;the time between fallings of the shapes
 ;-------------------------------------------
 ;-----------------VARIABLES-----------------
 ;-------------------------------------------
@@ -1116,7 +1117,7 @@ start:
 					
 					;newSecs - oldSecs < 2
 					sub dh, [oldSecs]
-					cmp dh, 2d
+					cmp dh, hovering_time
 					jb hoveringLoop
 					jmp stopHovering
 		
@@ -1125,7 +1126,7 @@ start:
 					mov al, 60d
 					sub al, [oldSecs]
 					add al, dh
-					cmp al, 2d
+					cmp al, hovering_time
 					jb hoveringLoop
 					
 				stopHovering:
