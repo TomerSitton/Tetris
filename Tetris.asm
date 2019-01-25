@@ -21,7 +21,9 @@ black equ 0
 square_side equ 10d;small square side size
 X0 equ 150d;the X in which a new shape should be created
 Y0 equ 20d;the Y in which a new shape should be created
-
+delta_x equ 20d;the distance to move when movement on X axis is required
+delta_y equ 20d;the distance to move when movement on Y axis is required
+hovering_time equ 2d;the time between fallings of the shapes
 ;-------------------------------------------
 ;-----------------VARIABLES-----------------
 ;-------------------------------------------
@@ -34,15 +36,50 @@ current_shape_Y dw 0
 current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
-
+;a vatiable saving clock seconds in order to help move shapes down in time 
+oldSecs db ?
 
 CODESEG
+;-------------------DEPRECATED - USING NEG INSTEAD-------------------
+;this procedure gets a number and returns 
+;its absolute value over the dx register
+;PARMAS:
+;	number (byValue) - signed
+;RETURNS
+;	the absolute value of the number (byValue) - signed - on regiser dx
+proc absoluteValue
+	param_num equ [bp + 4]
+	
+	;initBp
+	push bp
+	mov bp, sp
+	
+	;check if positive or negative
+	mov dx, param_num
+	shl dx, 1
+	jnc pos
+	
+	;the number is negative (biggest bit = 1)
+	mov dx, param_num
+	xor dx, 1111111111111111b;0->1, 1->0
+	inc dx; according to the completment to two method
+	jmp endOfProcAbsoluteValue	
+
+	;the number is positive (biggest bit = 0)
+	pos:
+		mov dx, param_num
+	
+	endOfProcAbsoluteValue:
+		pop bp
+		ret 
+	endp absoluteValue
+	
 
 ;this procedure gets dx and dy as parameters 
 ;and moves the current shape to the desired location
 ;PARAMS:
-;	dx (byValue)
-;	dy (byValue)
+;	dx (byValue) - signed
+;	dy (byValue) - signed
 proc move
 	param_dx equ [bp + 6]
 	param_dy equ [bp + 4]
@@ -53,26 +90,87 @@ proc move
 	
 	;save registers state
 	push ax
-	
 	;delete current shape
 	mov ax, [current_shape_color];save real color
 	mov [current_shape_color], black
 	call drawCurrentShape
-	
 	mov [current_shape_color], ax;recreate the color 
 	
-	;move the shape
+	;check if dX movment is negative or positive
 	mov ax, param_dx
-	add [current_shape_X], ax
-	mov ax, param_dy
-	add [current_shape_Y], ax
-	call drawCurrentShape
+	shl ax, 1
+	jnc positive
+	
+	;move left
+	negative:
+		;make it positive
+		mov ax, param_dx
+		neg ax
+			
+		;move the shape
+		sub [current_shape_X], ax
+		mov ax, param_dy
+		add [current_shape_Y], ax
+		jmp endOfProcMove
+	
+	;move right 	
+	positive:
+		;move the shape
+		mov ax, param_dx
+		add [current_shape_X], ax
+		mov ax, param_dy
+		add [current_shape_Y], ax
 	
 	endOfProcMove:
+		call drawCurrentShape
 		pop ax
 		pop bp
 		ret 4
 		endp move
+		
+;this procedure rotates the shape to the right
+;which means increases its configuration by 1
+;PARAMS:
+;	NONE
+proc rotateCurrentShapeRight
+	;delete current shape
+	push [current_shape_color]
+	mov [current_shape_color], black
+	call drawCurrentShape
+	;draw the shpae with new configuration
+	pop [current_shape_color]
+	inc [current_shape_config]
+	cmp [current_shape_config], 4
+	jbe endOfProcRotateRight
+	mov [current_shape_config], 0 
+	
+	endOfProcRotateRight:
+		call drawCurrentShape
+		ret	
+		endp rotateCurrentShapeRight
+	
+;this procedure rotates the shape to the left
+;which means decreases its configuration by 1
+;PARAMS:
+;	NONE
+proc rotateCurrentShapeLeft
+	;delete current shape
+	push [current_shape_color]
+	mov [current_shape_color], black
+	call drawCurrentShape
+	;draw the shpae with new configuration
+	pop [current_shape_color]
+	dec [current_shape_config]
+	cmp [current_shape_config], 1
+	jae endOfProcRotateRight
+	mov [current_shape_config], 4
+
+	endOfProcRotateLeft:
+		call drawCurrentShape
+		ret	
+		endp rotateCurrentShapeLeft
+	
+	
 ;this procedure draws the current shape according 
 ;to the data about them stored in DATASEG
 ;PARAMS
@@ -939,17 +1037,69 @@ proc drawPyramid
 		endp drawPyramid
 		
 
-
-
-
-
-
-
-
-
-
-
 		
+		
+		
+;this procedure checks the keyboard port for data, and
+;chenges the game's state accordingly
+;PARAMS
+;	NONE
+proc listenToKeyboard
+	;save registers state
+	push dx
+	push ax
+	;check for data
+	mov ah,1h
+	int 16h
+	jz endOfProcListenToKeyboard;no data
+	
+	;read the data: al=ASCII, ah=SCAN CODE
+	mov ah, 0h
+	int 16h
+	;up
+	cmp ah, 48h
+	je upButton
+	;down
+	cmp ah, 50h
+	je downButton
+	;left
+	cmp ah, 4bh
+	je leftButton
+	;right
+	cmp ah, 4dh
+	je rightButton
+		
+	jmp endOfProcListenToKeyboard
+		
+	;rotate shape right
+	upButton:
+		call rotateCurrentShapeRight
+		jmp endOfProcListenToKeyboard
+	;rotate shape left
+	downButton:
+		call rotateCurrentShapeLeft
+		jmp endOfProcListenToKeyboard
+	;mov shape left
+	leftButton:
+		xor ax, ax
+		sub ax, delta_x
+		push ax;dX = -delta_x
+		push 0;dY = 0
+		call move
+		jmp endOfProcListenToKeyboard
+	;move shape right
+	rightButton:
+		push delta_x;dX=delta_x
+		push 0;dY=0
+		call move
+		
+	endOfProcListenToKeyboard:
+		pop dx
+		pop ax
+		ret
+		endp listenToKeyboard
+		
+
 start:
 	mov ax, @data
 	mov ds, ax
@@ -980,22 +1130,37 @@ start:
 						je FirstTick;same counter value
 				
 				
-				mov cx, 9 ; wait 0.5 seconds: 9 * 0.055 = ~ 0.5sec
-				;sleep for 0.5 sec while listenig to the keyboard interrupts 
-				sleepingLoop:
-					mov ax, [es:006Ch];update ax according to counter
-					sameTickLoop:
-						cmp ax, [es:006Ch]
-						je sameTickLoop;same tick
-					;LISTEN TO KEYBOARD HERE!
-					loop sleepingLoop
-			dec bx
-			cmp bx, 0
-			je gameLoop
-			jne fallingLoop
-				
-				
+				mov ah, 2ch
+				int 21h ;ch- hour, cl- minutes, dh- seconds, dl- hundreths secs
+				mov [oldSecs], dh 
+				;hover for 2 sec while listenig to the keyboard interrupts 
+				hoveringLoop:
+					call listenToKeyboard
+					mov ah, 2ch
+					int 21h;ch- hour, cl- minutes, dh- seconds, dl- hundreths secs
+					cmp [oldSecs], dh
+					ja differentMinute;oldSecs > newSecs
+					
+					;newSecs - oldSecs < 2
+					sub dh, [oldSecs]
+					cmp dh, hovering_time
+					jb hoveringLoop
+					jmp stopHovering
 		
+					;60 - oldSecs + newSecs < 2
+					differentMinute:
+					mov al, 60d
+					sub al, [oldSecs]
+					add al, dh
+					cmp al, hovering_time
+					jb hoveringLoop
+					
+				stopHovering:
+					dec bx			
+					cmp bx, 0
+					je gameLoop
+					jne fallingLoop
+
 exit:
 	mov ax, 4c00h
 	int 21h
