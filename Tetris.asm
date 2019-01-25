@@ -40,6 +40,38 @@ current_shape_color dw 0
 oldSecs db ?
 
 CODESEG
+;-------------------DEPRECATED - USING NEG INSTEAD-------------------
+;this procedure gets a number and returns 
+;its absolute value over the dx register
+;PARMAS:
+;	number (byValue) - signed
+;RETURNS
+;	the absolute value of the number (byValue) - signed - on regiser dx
+proc absoluteValue
+	param_num equ [bp + 4]
+	
+	;initBp
+	push bp
+	mov bp, sp
+	
+	;check if positive or negative
+	mov dx, param_num
+	shl dx, 1
+	jc negative
+	;the number is positive (biggest bit = 0)
+	mov dx, param_num
+	jmp endOfProcAbsoluteValue		
+	;the number is negative (biggest bit = 1)
+	negative:
+		mov dx, param_num
+		xor dx, 1111111111111111b;0->1, 1->0
+		inc dx; according to the completment to two method
+	
+	endOfProcAbsoluteValue:
+		pop bp
+		ret 
+	endp absoluteValue
+	
 
 ;this procedure gets dx and dy as parameters 
 ;and moves the current shape to the desired location
@@ -64,26 +96,28 @@ proc move
 	call drawCurrentShape
 	mov [current_shape_color], ax;recreate the color 
 	
-	;check if dX movment is negetive or positive
+	;check if dX movment is negative or positive
 	mov ax, param_dx
 	shl ax, 1
 	jnc positive
 	
 	negative:
-		mov ax, param_dx
+		push [param_dx]
+		call absoluteValue
+		;mov ax, param_dx
 		;shift 0s with 1s and 1s with 0s
-		mov cl, 1
-		mov dx, 0h;dx will hold the positive number created
-		changeBitsLoop:
-			shl ax, cl
-			jc shift;the bit in location cx bit in ax is 1 (need to be set to 0)
-			changeTo1:
-				add dx, 1b
-			shift:
-				shl dx, 1
-			inc cl
-			cmp cl, 16
-			jne changeBitsLoop
+		;mov cl, 1
+		;mov dx, 0h;dx will hold the positive number created
+		;changeBitsLoop:
+		;	shl ax, cl
+		;	jc shift;the bit in location cx in ax is 1 (need to be set to 0)
+		;	changeTo1:
+		;		add dx, 1b
+		;	shift:
+		;		shl dx, 1
+		;	inc cl
+		;	cmp cl, 16
+		;	jne changeBitsLoop
 			
 		;move the shape
 		sub [current_shape_X],dx
