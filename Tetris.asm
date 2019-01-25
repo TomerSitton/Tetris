@@ -57,15 +57,18 @@ proc absoluteValue
 	;check if positive or negative
 	mov dx, param_num
 	shl dx, 1
-	jc negative
-	;the number is positive (biggest bit = 0)
-	mov dx, param_num
-	jmp endOfProcAbsoluteValue		
+	jnc pos
+	
 	;the number is negative (biggest bit = 1)
-	negative:
+	mov dx, param_num
+	xor dx, 1111111111111111b;0->1, 1->0
+	inc dx; according to the completment to two method
+	jmp endOfProcAbsoluteValue	
+
+	;the number is positive (biggest bit = 0)
+	pos:
 		mov dx, param_num
-		xor dx, 1111111111111111b;0->1, 1->0
-		inc dx; according to the completment to two method
+				
 	
 	endOfProcAbsoluteValue:
 		pop bp
@@ -89,7 +92,6 @@ proc move
 	;save registers state
 	push ax
 	push cx
-	push dx
 	;delete current shape
 	mov ax, [current_shape_color];save real color
 	mov [current_shape_color], black
@@ -101,41 +103,28 @@ proc move
 	shl ax, 1
 	jnc positive
 	
+	;move left
 	negative:
-		push [param_dx]
-		call absoluteValue
-		;mov ax, param_dx
-		;shift 0s with 1s and 1s with 0s
-		;mov cl, 1
-		;mov dx, 0h;dx will hold the positive number created
-		;changeBitsLoop:
-		;	shl ax, cl
-		;	jc shift;the bit in location cx in ax is 1 (need to be set to 0)
-		;	changeTo1:
-		;		add dx, 1b
-		;	shift:
-		;		shl dx, 1
-		;	inc cl
-		;	cmp cl, 16
-		;	jne changeBitsLoop
+		;make it positive
+		mov ax, param_dx
+		neg ax
 			
 		;move the shape
-		sub [current_shape_X],dx
+		sub [current_shape_X], ax
 		mov ax, param_dy
-		add[current_shape_Y], ax
-		call drawCurrentShape
+		add [current_shape_Y], ax
 		jmp endOfProcMove
-		
+	
+	;move right 	
 	positive:
 		;move the shape
 		mov ax, param_dx
 		add [current_shape_X], ax
 		mov ax, param_dy
 		add [current_shape_Y], ax
-		call drawCurrentShape
 	
 	endOfProcMove:
-		pop dx
+		call drawCurrentShape
 		pop cx
 		pop ax
 		pop bp
