@@ -1058,33 +1058,37 @@ proc listenToKeyboard
 	int 16h
 	;up
 	cmp ah, 48h
-	je up
+	je upButton
 	;down
 	cmp ah, 50h
-	je down
+	je downButton
 	;left
 	cmp ah, 4bh
-	je left
+	je leftButton
 	;right
 	cmp ah, 4dh
-	je right
+	je rightButton
 		
 	jmp endOfProcListenToKeyboard
 		
-	up:
+	;rotate shape right
+	upButton:
 		call rotateCurrentShapeRight
 		jmp endOfProcListenToKeyboard
-	down:
+	;rotate shape left
+	downButton:
 		call rotateCurrentShapeLeft
 		jmp endOfProcListenToKeyboard
-	left:
+	;mov shape left
+	leftButton:
 		xor ax, ax
 		sub ax, delta_x
 		push ax;dX = -delta_x
 		push 0;dY = 0
 		call move
 		jmp endOfProcListenToKeyboard
-	right:
+	;move shape right
+	rightButton:
 		push delta_x;dX=delta_x
 		push 0;dY=0
 		call move
