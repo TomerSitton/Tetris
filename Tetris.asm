@@ -68,7 +68,6 @@ proc absoluteValue
 	;the number is positive (biggest bit = 0)
 	pos:
 		mov dx, param_num
-				
 	
 	endOfProcAbsoluteValue:
 		pop bp
@@ -91,7 +90,6 @@ proc move
 	
 	;save registers state
 	push ax
-	push cx
 	;delete current shape
 	mov ax, [current_shape_color];save real color
 	mov [current_shape_color], black
@@ -125,7 +123,6 @@ proc move
 	
 	endOfProcMove:
 		call drawCurrentShape
-		pop cx
 		pop ax
 		pop bp
 		ret 4
