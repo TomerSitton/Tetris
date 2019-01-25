@@ -36,7 +36,7 @@ current_shape_Y dw 0
 current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
-
+;a vatiable saving clock seconds in order to help move shapes down in time 
 oldSecs db ?
 
 CODESEG
