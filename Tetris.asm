@@ -1042,6 +1042,8 @@ proc drawPyramid
 		
 ;this procedure checks the keyboard port for data, and
 ;chenges the game's state accordingly
+;PARAMS
+;	NONE
 proc listenToKeyboard
 	;save registers state
 	push dx
