@@ -16,7 +16,7 @@ initial_vid_memory_offset equ 0000h
 shapes_buffer_size equ 4d
 ;color constants
 black equ 0d
-gray equ 15d
+white equ 15d
 
 ;screen border constants
 border_width equ 15d
@@ -25,7 +25,7 @@ border_width equ 15d
 square_side equ 10d;small square side size
 X0 equ 150d;the X in which a new shape should be created
 Y0 equ 20d;the Y in which a new shape should be created
-delta_x equ 20d;the distance to move when movement on X axis is required
+delta_x equ 10d;the distance to move when movement on X axis is required
 delta_y equ 20d;the distance to move when movement on Y axis is required
 hovering_time equ 2d;the time between fallings of the shapes
 
@@ -1120,7 +1120,7 @@ proc init
 	push 0d;Y
 	push border_width;width
 	push column_height;height
-	push gray;color
+	push white;color
 	call drawRect
 	
 	;right border
@@ -1130,7 +1130,7 @@ proc init
 	push 0d;Y
 	push border_width;width
 	push column_height;height
-	push gray;color
+	push white;color
 	call drawRect
 	
 	;low border
@@ -1140,7 +1140,7 @@ proc init
 	push ax;Y
 	push row_length;width
 	push border_width;height
-	push gray;color
+	push white;color
 	call drawRect
 	
 	endOfProcInit:
