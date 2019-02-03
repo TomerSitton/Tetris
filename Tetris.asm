@@ -6,16 +6,20 @@ DATASEG
 ;-------------------------------------------
 ;-----------------CONSTANTS-----------------
 ;-------------------------------------------
-;screen constants
-row_length equ 320d
-column_height equ 200d
+;screen pixels constants
+row_length equ 320d;number of pixels in a row
+column_height equ 200d;number of pixels in a column
 ;video memory constants
 initial_vid_memory_seg equ 0A000h
 initial_vid_memory_offset equ 0000h
 ;shapes_buffer constants
 shapes_buffer_size equ 4d
 ;color constants
-black equ 0
+black equ 0d
+gray equ 15d
+
+;screen border constants
+border_width equ 15d
 
 ;game constants
 square_side equ 10d;small square side size
@@ -24,6 +28,8 @@ Y0 equ 20d;the Y in which a new shape should be created
 delta_x equ 20d;the distance to move when movement on X axis is required
 delta_y equ 20d;the distance to move when movement on Y axis is required
 hovering_time equ 2d;the time between fallings of the shapes
+
+
 ;-------------------------------------------
 ;-----------------VARIABLES-----------------
 ;-------------------------------------------
@@ -1099,7 +1105,49 @@ proc listenToKeyboard
 		ret
 		endp listenToKeyboard
 		
-
+;This procedure initializes everything before the game-loop starts
+;PARAMS
+;	NONE  
+proc init
+	;save registers state
+	push ax
+	
+	;init shapes buffer
+	call initShapesBuffer
+	
+	;left border
+	push 0d;X
+	push 0d;Y
+	push border_width;width
+	push column_height;height
+	push gray;color
+	call drawRect
+	
+	;right border
+	mov ax, row_length
+	sub ax, border_width
+	push ax;X
+	push 0d;Y
+	push border_width;width
+	push column_height;height
+	push gray;color
+	call drawRect
+	
+	;low border
+	push 0d;X
+	mov ax, column_height
+	sub ax, border_width
+	push ax;Y
+	push row_length;width
+	push border_width;height
+	push gray;color
+	call drawRect
+	
+	endOfProcInit:
+		pop ax
+		ret
+	endp init
+	
 start:
 	mov ax, @data
 	mov ds, ax
@@ -1107,7 +1155,7 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 	
-	call initShapesBuffer	
+	call init
 	gameLoop:
 		mov bx, 3;save the number of fallings in bx
 		call getNextShape
