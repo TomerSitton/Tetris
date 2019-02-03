@@ -1155,7 +1155,6 @@ start:
 	mov ax, 13h;set mode to graphics
 	int 10h
 	
-	;call initShapesBuffer	
 	call init
 	gameLoop:
 		mov bx, 3;save the number of fallings in bx
