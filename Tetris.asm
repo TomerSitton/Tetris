@@ -27,7 +27,7 @@ X0 equ 150d;the X in which a new shape should be created
 Y0 equ 20d;the Y in which a new shape should be created
 delta_x equ 10d;the distance to move when movement on X axis is required
 delta_y equ 20d;the distance to move when movement on Y axis is required
-hovering_time equ 2d;the time between fallings of the shapes
+hovering_time equ 1d;the time between fallings of the shapes
 
 
 ;-------------------------------------------
@@ -1157,13 +1157,13 @@ start:
 	
 	call init
 	gameLoop:
-		mov bx, 3;save the number of fallings in bx
+		mov bx, 6;save the number of fallings in bx
 		call getNextShape
 		;fall down for 5 sec
 		fallingLoop:
 			call drawCurrentShape
 			push 0d;dx
-			push 40d;dy
+			push delta_y;dy
 			call move
 		
 				;wait for first change in counter 
