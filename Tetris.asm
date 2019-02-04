@@ -134,6 +134,64 @@ proc move
 		ret 4
 		endp move
 		
+		
+;This procedure checks if the shape can move, and moves it if it can.
+;A shape cannot move if the movement will make it collide with another
+;shape or with the borders of the screen. 
+;PARAMS:
+;	dx (byValue) - signed
+;	dy (byValue) - signed		
+proc tryToMove
+	param_dx equ [bp + 6]
+	param_dy equ [bp + 4]
+	
+	;init bp
+	push bp
+	mov bp, sp
+	
+	;save registers state
+	push ax
+	push bx
+	push cx
+
+	;save new X position in ax
+	handle_dx:
+		mov ax, param_dx
+		shl ax, 1
+		jnc positiveX
+	
+		negativeX:
+			;make it positive
+			mov ax, current_shape_X
+			mov cx, param_dx
+			neg cx
+			sub ax, cx
+			jmp handle_dy
+		positiveX:
+			mov ax, current_shape_X
+			add ax, param_dx
+	
+	;save new Y position in bx
+	handle_dy:
+		mov bx, param_dy
+		shl bx, 1
+		jnc positiveY
+	
+		negativeY:
+			;make it positive
+			mov bx, current_shape_Y
+			mov cx, param_dy
+			neg cx
+			sub bx, cx
+			jmp checkTouch
+		positiveY:
+			mov bx, current_shape_Y
+			add bx, param_dy
+	
+	checkTouch
+	
+	
+	
 ;this procedure rotates the shape to the right
 ;which means increases its configuration by 1
 ;PARAMS:
