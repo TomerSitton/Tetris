@@ -42,8 +42,8 @@ current_shape_Y dw 0
 current_shape_type dw 0
 current_shape_config dw 0
 current_shape_color dw 0
-current_shape_components_X db 4 dup(?);this buffer contains the X coordinants of the small squares creating the shape
-current_shape_components_y db 4 dup(?);this buffer contains the Y coordinants of the small squares creating the shape
+current_shape_components_X dw 4 dup(?);this buffer contains the X coordinants of the small squares creating the shape
+current_shape_components_Y dw 4 dup(?);this buffer contains the Y coordinants of the small squares creating the shape
 ;a vatiable saving clock seconds in order to help move shapes down in time 
 oldSecs db ?
 
@@ -494,19 +494,35 @@ proc drawRect
 		int 21h
 	endp drawRect
 	
-;this procedure gets X,Y coordinants and color
-;and draws a square in the smallest size in the game
+;this procedure gets X,Y coordinants, color and the index of the square
+;in the shape (first, second, etc..) and draws a square in the smallest 
+;size in the game
+;index are between 0 and 3
 ;PARAMS:
 ;	X (byValue)
 ;	Y (byValue)
 ;	color (byValue)
+;	index (byValue)	
 proc drawBasicSquare
-	param_x equ [word ptr bp + 8]
-	param_y equ [word ptr bp + 6]
-	param_color equ [word ptr bp + 4]	
+	param_x equ [word ptr bp + 10]
+	param_y equ [word ptr bp + 8]
+	param_color equ [word ptr bp + 6]	
+	param_index equ [word ptr bp + 4]
 	
 	push bp
-	mov bp, sp
+	mov bp, sp	
+	
+	;save registers state
+	push bx
+	push ax
+	
+	;update the shape's coordinants lists
+	mov bx, param_index
+	mov ax, param_x
+	mov [current_shape_components_X + bx], ax
+	mov [current_shape_components_X + bx], ax
+	mov ax, param_y
+	mov [current_shape_components_Y + bx], ax
 	
 	push param_x;X
 	push param_y;Y
@@ -515,8 +531,11 @@ proc drawBasicSquare
 	push param_color;color
 	call drawRect
 	
-	pop bp
-	ret 6
+	endOfProcDrawBasicSquare:
+		pop ax
+		pop bx
+		pop bp
+		ret 6
 	endp drawBasicSquare
 
 ;-------------------------------------------------------------------------------------------------------------------------------------
@@ -541,6 +560,7 @@ proc drawBigSquare
 	param_y equ [word ptr bp + 8]
 	param_color equ [word ptr bp + 6]
 	param_config_number equ [word ptr bp + 4]
+	
 	;init bp
 	push bp
 	mov bp, sp
@@ -548,19 +568,49 @@ proc drawBigSquare
 	;save registers state
 	push ax
 	push bx
-		
-	mov al, square_side;save square_side in ax for multipication
-	mov bl, 2
-	mul bl
+	push cx
 	
-	push param_x;X
-	push param_y;Y
-	push ax;width
-	push ax;Side
+	mov ax, param_x;x
+	mov bx, param_y;y
+	mov cx, 0;index
+	
+	;first square (index = 0)
+	push ax;X
+	push bx;Y
 	push param_color;color
-	call drawRect
+	push cx;index
+	call drawBasicSquare
+	inc cx;increase index
+	
+	;second square (index = 1)
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y
+	push param_color;color
+	push cx;index
+	call drawBasicSquare
+	inc cx;increase index
+	
+	;third square (index = 2)
+	sub ax, square_side
+	push ax;X
+	add bx, square_side
+	push bx;Y + square_side
+	push param_color;color
+	push cx;index
+	call drawBasicSquare
+	inc cx;increase index
+	
+	;fourth square (index = 3)
+	add ax, square_side
+	push ax;X + square_side
+	push bx;Y + square_side
+	push param_color;color
+	push cx;index
+	call drawBasicSquare	
 	
 	endOfProcDrawBigSquare:
+		pop cx
 		pop bx
 		pop ax
 		pop bp
@@ -598,15 +648,19 @@ proc drawL
 	;save registers state
 	push ax
 	push bx
-		
+	push cx
+	
 	mov ax,param_x;save current X in ax 
 	mov bx,param_y;save current Y in bx
+	mov cx, 0 ;index
 	
 	;first square
 	push ax;X
 	push bx;Y
 	push param_color
+	push cx;index
 	call drawBasicSquare
+	inc cx
 	
 	cmp param_config_number, 1
 	je L1
@@ -622,20 +676,25 @@ proc drawL
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		push ax;X
 		add bx, square_side;Y+square_side+square_side
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		add ax, square_side
 		push ax;X + square_side
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawL
 		
@@ -645,21 +704,26 @@ proc drawL
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		add ax, square_side
 		push ax;X + square_side
 		sub bx, square_side;Y
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		add ax, square_side
 		push ax;X + square_side + square_side
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawL
 	L3:
@@ -668,20 +732,25 @@ proc drawL
 		push ax;X + square_side
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		push ax;X + square_side
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		push ax;X 
 		add bx, square_side
 		push bx;Y + square_side + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawL
 	L4:
@@ -692,15 +761,19 @@ proc drawL
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		add ax, square_side
 		push ax;X - square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		add ax, square_side
 		push ax;X  
@@ -709,6 +782,7 @@ proc drawL
 		call drawBasicSquare
 	
 	endOfProcDrawL:
+		pop cx
 		pop bx
 		pop ax
 		pop bp
@@ -748,11 +822,11 @@ proc drawStraightLine
 	;save registers state
 	push ax
 	push bx
+	push cx
 	
-	mov al, square_side;save square_side in ax for multipication
-	mov bl, 4
-	mul bl
-	
+	mov cx, 0
+	mov ax, param_x
+	mov bx, param_y
 	
 	cmp param_config_number, 1
 	je verticalLine
@@ -762,23 +836,78 @@ proc drawStraightLine
 	jmp horizontalLine
 	
 	verticalLine:
-		push param_x;X
-		push param_y;Y
-		push ax;width
-		push square_side;height
+		;first square
+		push ax;X
+		push bx;Y
 		push param_color;color
-		call drawRect
+		push cx;index
+		call drawBasicSquare
+		inc cx
+		
+		;second square
+		push ax;X
+		add bx, square_side
+		push bx;Y + square_side
+		push param_color;color
+		push cx;index
+		call drawBasicSquare
+		inc cx
+		
+		;third square
+		push ax;X
+		add bx, square_side
+		push bx;Y + square_side + square_side
+		push param_color;color
+		push cx;index
+		call drawBasicSquare
+		inc cx
+		
+		;fourth square
+		push ax;X
+		add bx, square_side
+		push bx;Y + square_side + square_side + square_side
+		push param_color;color
+		push cx;index
+		call drawBasicSquare
 		jmp endOfProcDrawStraightLine
 		
 	horizontalLine:
-		push param_x;X
-		push param_y;Y
-		push square_side;width
-		push ax;height
+		;first square
+		push ax;X
+		push bx;Y
 		push param_color;color
-		call drawRect
+		push cx;index
+		call drawBasicSquare
+		inc cx
+		
+		;second square
+		add ax, square_side
+		push ax;X + square_side
+		push bx;Y
+		push param_color;color
+		push cx;index
+		call drawBasicSquare
+		inc cx
+		
+		;third square
+		add ax, square_side
+		push ax;X + square_side + square_side
+		push bx;Y
+		push param_color;color
+		push cx;index
+		call drawBasicSquare
+		inc cx
+		
+		;fourth square
+		add ax, square_side
+		push ax;X + square_side + square_side + square_side
+		push bx;Y
+		push param_color;color
+		push cx;index
+		call drawBasicSquare
 	
 	endOfProcDrawStraightLine:
+		pop cx
 		pop bx
 		pop ax
 		pop bp
@@ -816,15 +945,19 @@ proc drawStair
 	;save registers state
 	push ax
 	push bx
-		
+	push cx
+	
 	mov ax,param_x;save current X in ax 
 	mov bx,param_y;save current Y in bx
+	mov cx,0;index
 	
 	;first square
 	push ax;X
 	push bx;Y
 	push param_color
+	push cx;index
 	call drawBasicSquare
+	inc cx
 	
 	cmp param_config_number, 1
 	je stair1
@@ -839,20 +972,25 @@ proc drawStair
 		push ax;X + square_side
 		push bx;Y 
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		push ax;X + square_side
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		add ax, square_side
 		push ax;X + square_side + square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawStair
 	
@@ -862,25 +1000,31 @@ proc drawStair
 		sub bx, square_side
 		push bx;Y - square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		add ax, square_side
 		push ax;X + square_side
 		add bx, square_side
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		push ax;X + square_side
 		add bx, square_side
 		push bx;Y + square_side + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawStair
 	
 	endOfProcDrawStair:
+		pop cx
 		pop bx
 		pop ax
 		pop bp
@@ -919,15 +1063,19 @@ proc drawPyramid
 	;save registers state
 	push ax
 	push bx
-		
+	push cx
+	
 	mov ax,param_x;save current X in ax 
 	mov bx,param_y;save current Y in bx
+	mov cx, 0;index
 	
 	;first square
 	push ax;X
 	push bx;Y
 	push param_color
+	push cx;index
 	call drawBasicSquare
+	inc cx
 	
 	cmp param_config_number, 1
 	je pyramid1
@@ -945,21 +1093,26 @@ proc drawPyramid
 		push ax;X + square_side
 		push bx;Y 
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		push ax;X + square_side
 		sub bx, square_side
 		push bx;Y - square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		add ax, square_side
 		push ax;X + square_side + square_side
 		add bx, square_side
 		push bx;Y 
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawPyramid
 	
@@ -969,22 +1122,27 @@ proc drawPyramid
 		push ax;X + square_side
 		push bx;Y 
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		sub ax, square_side
 		push ax;X
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		push ax;X
 		sub bx, square_side
 		sub bx, square_side
 		push bx;Y - square_side - square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawPyramid
 	
@@ -994,21 +1152,26 @@ proc drawPyramid
 		push ax;X + square_side
 		push bx;Y 
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		add ax, square_side
 		push ax;X + square_side + square_side
 		push bx;Y
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		sub ax, square_side
 		push ax;X + square_side
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawPyramid
 	
@@ -1018,26 +1181,32 @@ proc drawPyramid
 		push ax;X + square_side
 		push bx;Y 
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;third square
 		push ax;X + square_side
 		add bx, square_side
 		push bx;Y + square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
-	
+		inc cx
+		
 		;fourth square
 		push ax;X + square_side
 		sub bx, square_side
 		sub bx, square_side
 		push bx;Y - square_side
 		push param_color
+		push cx;index
 		call drawBasicSquare
 		jmp endOfProcDrawPyramid
 	
 	
 	endOfProcDrawPyramid:
+		pop cx
 		pop bx
 		pop ax
 		pop bp
