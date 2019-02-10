@@ -520,7 +520,6 @@ proc drawBasicSquare
 	mov bx, param_index
 	mov ax, param_x
 	mov [current_shape_components_X + bx], ax
-	mov [current_shape_components_X + bx], ax
 	mov ax, param_y
 	mov [current_shape_components_Y + bx], ax
 	
