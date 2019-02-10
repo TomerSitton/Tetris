@@ -828,12 +828,10 @@ proc drawStraightLine
 	mov bx, param_y
 	
 	cmp param_config_number, 1
-	je verticalLine
+	je horizontalLine
 	cmp param_config_number, 3
-	je  verticalLine
-	
-	jmp horizontalLine
-	
+	je  horizontalLine
+		
 	verticalLine:
 		;first square
 		push ax;X
